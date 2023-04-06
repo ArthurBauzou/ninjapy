@@ -11,10 +11,19 @@ import structures as struct
 import ennemies as ennemies
 
 def get_z(obj):
-    return obj['z-index']
+    return obj.rect.bottom
 
 def isNear(a,b,sensibility):
     return a-b >= -sensibility and a-b <= sensibility
+
+def get_solid_objects(list) -> list:
+    solid_objects = [obj.rect for obj in list if obj.solid]
+    return solid_objects
+
+def game_reset(hero, list):
+    hero.ammo = 5
+    hero.health = 3
+    list = []
 
 
 #–––––––––––––––––––––#
@@ -29,7 +38,7 @@ screen = pygame.Surface((GAME_WIDTH, GAME_HEIGHT))
 last_arrow = pygame.K_SPACE
 screen_position = [0,0]
 game_frames = 0
-sprite_id = 0
+# sprite_id = 0
 screenshake_timer = 0
 
 ## GRAPHICS
@@ -52,7 +61,7 @@ ammo_rects = [ pygame.Rect(12 + x*11, 16, 16, 16) for x in range(5) ]
 screenshake_frequency = 2
 screenshake_intensity = 4
 screenshake_duration = 4
-
+SCREENSHAKE = pygame.USEREVENT + 0
 
 #––––––––––––––––––––––#
 ### GENERATING LEVEL ###
@@ -66,54 +75,39 @@ for x in range(15):
         background.blit(tiles, (32*x,32*y), tileset[style])
 
 ## ACTORS
-sprite_list = []
 shuriken_list = []
-enemy_list = []
-solid_objects = []
+object_list = []
+ogres =  []
 
 # generating player
-sprite_id += 1
-hero = player.Player([240,180], sprite_id)
-sprite_list.append(hero.sprite_info())
+hero = player.Player([240,180])
+object_list.append(hero)
 
 # generating bamboos
-random_bamboo_positions = [
-    (random.choice(range(64,416,32)),random.choice(range(64,256,32)))
-    for i in range(4)
-]
-for pos in (random_bamboo_positions):
-    if pos[0] >= 210 and pos[0] <= 270 and pos[1] >= 140 and pos[1] < 180 :
-        print('bad bamboo !')
-    else :
-        sprite_id += 1
-        bamboo = struct.Bamboo(pos, sprite_id)
-        solid_objects.append(bamboo.rect)
-        sprite_list.append(bamboo.sprite_info())
+bamboo_positions = [(64,64),(84,84),(416,264),(396,244)]
+for pos in (bamboo_positions):
+    bamboo = struct.Bamboo(pos)
+    object_list.append(bamboo)
 
 # generating plants
 random_plant_positions = [
     (random.choice(range(32,448,16)),random.choice(range(32,288,16)))
-    for i in range(24)
+    for i in range(28)
 ]
 for pos in random_plant_positions:
-    sprite_id += 1
-    plant = struct.Plant(pos, sprite_id)
-    sprite_list.append(plant.sprite_info())
+    plant = struct.Plant(pos)
+    object_list.append(plant)
 
 # generating rock
-sprite_id += 1
-rock = struct.Rock((240,160), sprite_id)
-solid_objects.append(rock.rect)
-sprite_list.append(rock.sprite_info())
+rock = struct.Rock((240,160))
+object_list.append(rock)
 
 # generating ennemies
-bads_coords = [ (128,128),(380,128),(380,240),(128,240) ]
+bads_coords = [ (96,112),(380,112),(380,212),(96,212) ]
 for i in range(len(bads_coords)) :
-    sprite_id += 1
-    if i%2==0 : bad = ennemies.Kappa(bads_coords[i], sprite_id)
-    else : bad = ennemies.Ogre(bads_coords[i], sprite_id)
-    enemy_list.append(bad.rect)
-    sprite_list.append(bad.sprite_info())
+    if i%2==0 : bad = ennemies.Kappa(bads_coords[i])
+    else : bad = ennemies.Ogre(bads_coords[i])
+    object_list.append(bad)
 
 
 #–––––––––––––––#
@@ -129,9 +123,7 @@ while True:
                 exit()
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_r:
-                            hero.ammo = 5
-                            hero.health = 3
-                            shuriken_list = []
+                    game_reset(hero, shuriken_list)
         screen.blit( game_over_splash, (0,0))
 ## MAIN GAME
     else:
@@ -140,13 +132,17 @@ while True:
             if event.type == pygame.QUIT:
                 pygame.quit()
                 exit()
+            if event.type == SCREENSHAKE:
+                screenshake_timer = 8
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_x:
                     hero.shoot(shuriken_list)
                 if event.key == pygame.K_r:
-                    hero.ammo = 5
-                    hero.health = 3
-                    shuriken_list = []
+                    game_reset(hero, shuriken_list)              
+                if event.key == pygame.K_t:
+                    # use for debug
+                    print(shuriken_list)
+                    pass
                 if event.key in [pygame.K_UP, pygame.K_DOWN, pygame.K_LEFT, pygame.K_RIGHT]:
                     if last_arrow == event.key \
                     and game_frames - hero.input_dash_timer <= hero.DASH_DOUBLE_TAP_WINDOW:
@@ -155,12 +151,18 @@ while True:
                     hero.input_dash_timer = game_frames
 
     ## ENTITIES BEHAVIOUR
+
+
         # player
+        sol_obj = get_solid_objects(object_list)
         if hero.state == 'normal': hero.control_movement()
-        if hero.state == 'dashing': hero.bounce(solid_objects)
-        else : hero.collide(solid_objects)
+        if hero.state == 'dashing': hero.bounce(sol_obj)
+        else : hero.collide(sol_obj)
         hero.warp()
-        hero.update(sprite_list)
+        hero.update()
+
+        # ogres
+        # ogres = [obj for obj in object_list if type(obj) == ennemies.Ogre]
 
         # shuriken
         for shuriken in shuriken_list:
@@ -168,21 +170,31 @@ while True:
             shuriken.warp()
             shuriken.animate()
             shuriken.activate(hero.rect)
-            if shuriken.rect.colliderect(hero.rect) and shuriken.active and hero.state != 'hurting':
-                shuriken_list.remove(shuriken)
-                del shuriken
-                if hero.ammo <= 5 : hero.ammo += 1
-                if hero.state == 'normal' :
-                    hero.hurt()
-                    screenshake_timer = 4
+            for obj in object_list:
+                if shuriken.rect.colliderect(obj.rect) and shuriken.active :
+                    shuriken.collide(obj, shuriken_list)
+            # if shuriken.rect.colliderect(hero.rect) and shuriken.active and hero.state != 'hurting':
+            #     shuriken_list.remove(shuriken)
+            #     del shuriken
+            #     if hero.ammo <= 5 : hero.ammo += 1
+            #     if hero.state == 'normal' :
+            #         hero.hurt()
+            #         screenshake_timer = 4
+            # else :
+            #     for ogre in ogres : 
+            #         if shuriken.rect.colliderect(ogre):
+            #             ogre.damage()
+
 
     ## DRAWING BACKGROUND
         screen.blit(background, (0,0))
 
     ## DRAWING ENTITIES
-        sprite_list.sort(key=get_z)
-        for sprite in sprite_list:
-            screen.blit(tiles, sprite['pos'], sprite['sprite'])
+
+        object_list.sort(key=get_z)
+        for obj in object_list:
+            screen.blit(tiles, obj.sprite_pos, obj.sprite)
+
         for shuriken in shuriken_list:
             screen.blit(tiles, shuriken.rect, shuriken.sprite)
 

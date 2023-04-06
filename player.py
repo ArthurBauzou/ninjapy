@@ -16,18 +16,21 @@ global_directions = {
     pygame.K_UP: (0,-1),
 }
 
+TEST = pygame.USEREVENT + 0
+
 ## CLASS
 class Player:
-    def __init__(self, pos, id) -> None:
+    def __init__(self, pos) -> None:
         # INI
         self.pos = [x for x in pos]
         self.rect = pygame.Rect(-100, -100, 16, 16)
         self.rect.center = self.pos
         self.sprite = tileset['ninja']
-        self.id = id
         self.OFFSET_X = 8
         self.OFFSET_Y = 12
+        self.sprite_pos = ( self.rect.left - self.OFFSET_X, self.rect.top - self.OFFSET_Y )
         self.state = 'normal'
+        self.solid = True
         # HEALTH
         self.health = 3
         self.hurt_timer = 0
@@ -96,42 +99,26 @@ class Player:
             self.sprite = tileset['ninja_dash']
             for i in range(2): self.speed[i] += self.DASH_ACCELERATION*global_directions[key][i]
     
-    def update(self, sprite_list):
-        #update position
-        for i in range(2): self.pos[i] += self.speed[i]
-        self.rect.center = (self.pos[0], self.pos[1])
-
-        # hurting frames
+    def update(self):
+        # damage
         if self.hurt_timer > 0 :
             self.hurt_timer -= 1
             if self.hurt_timer %6==0 : self.pos[1] -=2
             elif self.hurt_timer %3==0: self.pos[1] +=2
             if self.hurt_timer == 1: self.health -= 1
-        # dashing frames
-        elif self.dash_timer > 0: self.dash_timer -= 1
-        else: 
+        # dash
+        if self.dash_timer > 0: self.dash_timer -= 1
+        if self.dash_cooldown_timer > 0: self.dash_cooldown_timer -= 1
+        # reset state
+        if self.hurt_timer == 0 and self.dash_timer == 0: 
             self.state = 'normal'
             self.sprite = tileset['ninja']
-        # dash cooldown
-        if self.dash_cooldown_timer > 0: self.dash_cooldown_timer -= 1
+            
+        #update position
+        for i in range(2): self.pos[i] += self.speed[i]
+        self.rect.center = (self.pos[0], self.pos[1])
+        self.sprite_pos = ( self.rect.left - self.OFFSET_X, self.rect.top - self.OFFSET_Y )
 
-
-        #update z-index
-        for s in sprite_list:
-            if s['id'] == self.id:
-                s['z-index'] = self.rect.bottom
-                s['sprite'] = self.sprite
-                s['pos'] = ( self.rect.left - self.OFFSET_X, self.rect.top - self.OFFSET_Y )
-                break
-
-    def sprite_info(self):
-        return {
-            'id': self.id,
-            'pos': ( self.rect.left - self.OFFSET_X, self.rect.top - self.OFFSET_Y ),
-            'sprite': self.sprite,
-            'z-index': self.rect.bottom
-        }
-    
     def bounce(self, list):
         for obj in list:
             BOUNCE = 4
@@ -158,11 +145,10 @@ class Player:
                 if isNear(self.rect.bottom, obj.top, 3) and self.speed[1] > 0: self.speed[1] = 0 
                 if isNear(self.rect.top, obj.bottom, 3) and self.speed[1] < 0: self.speed[1] = 0 
 
-
-
-    def hurt(self):
+    def damage(self):
         HURT_COOLDOWN = 24
         self.state = 'hurting'
         self.speed = [x/2 for x in self.speed]
         self.sprite = tileset['ninja_hurt']
         self.hurt_timer = HURT_COOLDOWN
+        pygame.event.post(pygame.event.Event(TEST))

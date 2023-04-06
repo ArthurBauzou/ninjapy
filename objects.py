@@ -3,6 +3,10 @@ import pygame
 from sprite_map import tileset
 from conf import GAME_HEIGHT, GAME_WIDTH
 
+import ennemies
+import structures
+import player
+
 class Shuriken:
     def __init__(self, pos, speed):
         self.pos = [x for x in pos]
@@ -37,5 +41,15 @@ class Shuriken:
                 self.sprite = tileset['shuriken1']
         else:
             self.anim_timer -= 1
+
+    def collide(self, target, list):
+        if type(target) == player.Player :
+            if target.state != 'hurting':
+                list.remove(self)
+                del self
+                if target.ammo <= 5 : target.ammo += 1
+                if target.state == 'normal' :
+                    target.damage()
+
 
 
