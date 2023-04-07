@@ -16,7 +16,7 @@ global_directions = {
     pygame.K_UP: (0,-1),
 }
 
-TEST = pygame.USEREVENT + 0
+SCREENSHAKE = pygame.USEREVENT + 0
 
 ## CLASS
 class Player:
@@ -151,4 +151,5 @@ class Player:
         self.speed = [x/2 for x in self.speed]
         self.sprite = tileset['ninja_hurt']
         self.hurt_timer = HURT_COOLDOWN
-        pygame.event.post(pygame.event.Event(TEST))
+        pygame.event.post(pygame.event.Event(SCREENSHAKE))
+

@@ -9,6 +9,7 @@ from conf import GAME_HEIGHT, GAME_SCALE, GAME_SPEED, GAME_WIDTH
 import player as player
 import structures as struct
 import ennemies as ennemies
+import objects as objects
 
 def get_z(obj):
     return obj.rect.bottom
@@ -62,6 +63,8 @@ screenshake_frequency = 2
 screenshake_intensity = 4
 screenshake_duration = 4
 SCREENSHAKE = pygame.USEREVENT + 0
+CREATE_PICKUP = pygame.USEREVENT + 1
+
 
 #––––––––––––––––––––––#
 ### GENERATING LEVEL ###
@@ -134,6 +137,8 @@ while True:
                 exit()
             if event.type == SCREENSHAKE:
                 screenshake_timer = 8
+            if event.type == CREATE_PICKUP:
+                object_list.append(objects.Pickup(event.pos, event.style))
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_x:
                     hero.shoot(shuriken_list)
@@ -152,7 +157,6 @@ while True:
 
     ## ENTITIES BEHAVIOUR
 
-
         # player
         sol_obj = get_solid_objects(object_list)
         if hero.state == 'normal': hero.control_movement()
@@ -163,27 +167,22 @@ while True:
 
         # ogres
         # ogres = [obj for obj in object_list if type(obj) == ennemies.Ogre]
+        for pickup in [obj for obj in object_list if type(obj) == objects.Pickup]:
+            if pickup.rect.colliderect(hero.rect):
+                pickup.get_pickedup(hero)
+            if pickup.removable : object_list.remove(pickup)
+
 
         # shuriken
         for shuriken in shuriken_list:
-            shuriken.move()
-            shuriken.warp()
-            shuriken.animate()
             shuriken.activate(hero.rect)
+            shuriken.warp()
+            if shuriken.state != 'pickup' : shuriken.animate()
             for obj in object_list:
-                if shuriken.rect.colliderect(obj.rect) and shuriken.active :
+                if shuriken.rect.colliderect(obj.rect) and shuriken.state == 'active' :
                     shuriken.collide(obj, shuriken_list)
-            # if shuriken.rect.colliderect(hero.rect) and shuriken.active and hero.state != 'hurting':
-            #     shuriken_list.remove(shuriken)
-            #     del shuriken
-            #     if hero.ammo <= 5 : hero.ammo += 1
-            #     if hero.state == 'normal' :
-            #         hero.hurt()
-            #         screenshake_timer = 4
-            # else :
-            #     for ogre in ogres : 
-            #         if shuriken.rect.colliderect(ogre):
-            #             ogre.damage()
+            shuriken.update()
+            if shuriken.state == 'removed' : shuriken_list.remove(shuriken)
 
 
     ## DRAWING BACKGROUND
