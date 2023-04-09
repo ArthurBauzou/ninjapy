@@ -64,6 +64,7 @@ screenshake_intensity = 4
 screenshake_duration = 4
 SCREENSHAKE = pygame.USEREVENT + 0
 CREATE_PICKUP = pygame.USEREVENT + 1
+SCORE = pygame.USEREVENT + 2
 
 
 #––––––––––––––––––––––#
@@ -110,6 +111,7 @@ object_list.append(struct.Shrine((240,160)))
 #     else : bad = ennemies.Ogre(bads_coords[i])
 #     object_list.append(bad)
 for coord in [(96,112),(380,212)] :
+# for coord in [(96,112)] :
     object_list.append(ennemies.Ogre(coord))
 
 
@@ -137,6 +139,8 @@ while True:
                 exit()
             if event.type == SCREENSHAKE:
                 screenshake_timer = 8
+            if event.type == SCORE:
+                score += event.value
             if event.type == CREATE_PICKUP:
                 object_list.append(objects.Pickup(event.pos, event.style))
             if event.type == pygame.KEYDOWN:
@@ -168,8 +172,15 @@ while True:
         # ogres
         # ogres = [obj for obj in object_list if type(obj) == ennemies.Ogre]
         for ogre in [obj for obj in object_list if type(obj) == ennemies.Ogre]:
-            if ogre.state == 'normal' : ogre.move(hero)
+
+            if ogre.charge_rect.colliderect(hero.rect) and ogre.state == 'normal': 
+                ogre.charge()
+            if (ogre.state == 'charging' and ogre.rect.colliderect(hero.rect)) \
+            or ogre.charge_timer == 1:
+                ogre.slam(hero)
+            if ogre.state not in ['hurting', 'slamming'] : ogre.move(hero)
             ogre.update()
+            if ogre.state == 'removed' : object_list.remove(ogre)
 
         #pickups
         for pickup in [obj for obj in object_list if type(obj) == objects.Pickup]:

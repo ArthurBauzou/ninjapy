@@ -1,4 +1,4 @@
-import pygame
+import pygame, random
 from sprite_map import tileset
 
 # cette fonction renvoie un vecteur type (a,b) ou a et b ne peuvent avoir que les valeurs -1, 0 ou 1.
@@ -10,6 +10,8 @@ def get_target_direction(self_rect:pygame.Rect,target_rect:pygame.Rect):
         if direction[i] == 0 : continue
         else : direction[i] = direction[i] / abs(direction[i])
     return direction
+
+SCORE = pygame.USEREVENT + 2
 
 class Kappa:
     def __init__(self, pos):
@@ -39,42 +41,76 @@ class Ogre:
         self.OFFSET_Y = 14
         self.sprite_pos = ( self.rect.left - self.OFFSET_X, self.rect.top - self.OFFSET_Y )
         self.solid = True
+        self.life = 4
+        self.MAX_SPEED = 0.4 + random.choice(range(3))/10
 
         # behaviour
+        self.charge_rect = pygame.Rect(-100, -100, 108, 108)
+        self.slam_rect = pygame.Rect(-100, -100, 32, 32)
         self.state = 'normal'
         self.hurt_timer = 0
+        self.charge_timer = 0
+        self.slam_timer = 0
+        self.max_speed = self.MAX_SPEED
 
     def update(self):
         for i in range(2): self.pos[i] += self.speed[i]
         self.rect.center = (self.pos[0], self.pos[1])
+        self.charge_rect.center = (self.pos[0], self.pos[1])
         self.sprite_pos = ( self.rect.left - self.OFFSET_X, self.rect.top - self.OFFSET_Y )
 
         # reset state
-        if self.hurt_timer == 0 : 
+        if self.hurt_timer == 0 \
+        and self.charge_timer == 0 \
+        and self.slam_timer == 0 : 
             self.state = 'normal'
             self.sprite = tileset['ogre']
+            self.max_speed = self.MAX_SPEED
         # damage
         elif self.hurt_timer > 0 :
             self.hurt_timer -= 1
-            if self.hurt_timer %6==0 : self.pos[1] -=2
-            elif self.hurt_timer %3==0: self.pos[1] +=2
-
-
-    def move_random(self):
-        pass
+            if self.hurt_timer %10==0 : self.pos[1] -=2
+            elif self.hurt_timer %5==0: self.pos[1] +=2
+        # slam
+        elif self.slam_timer > 0 :
+            self.slam_timer -= 1
+            if self.slam_timer %10==0 : self.pos[1] -=2
+            elif self.slam_timer %5==0: self.pos[1] +=2
+        # charge
+        elif self.charge_timer > 0 :
+            self.charge_timer -= 1
 
     def move(self, target):
-        ACCEL = 0.5
-        MAX_SPEED = 0.8
+        ACCEL = 0.2
         dir = get_target_direction(self.rect,target.rect)
         for i in range(2): self.speed[i] += ACCEL*dir[i]
         for i,x in enumerate(self.speed):
-            if x >= MAX_SPEED: self.speed[i] = MAX_SPEED
-            if x <= -MAX_SPEED: self.speed[i] = -MAX_SPEED
+            if x >= self.max_speed: self.speed[i] = self.max_speed
+            if x <= -self.max_speed: self.speed[i] = -self.max_speed
 
-    def damage(self):
+    def charge(self):
+        print('ogre should charge')
+        self.state = 'charging'
+        self.sprite = tileset['ogre_charge']
+        self.max_speed = 1.2
+        self.charge_timer = 90
+
+    def slam(self, target):
+        self.charge_timer = 0
+        self.speed = [0,0]
+        self.state = 'slamming'
+        self.sprite = tileset['ogre_slam']
+        self.slam_timer = 24
+        self.slam_rect.center = self.rect.center
+        if self.slam_rect.colliderect(target.rect) :
+            target.damage()
+
+    def damage(self, dir):
+        self.speed = [x/5 for x in dir]
         self.state = 'hurting'
-        self.hurt_timer = 24
+        self.hurt_timer = 42
+        self.charge_timer = 0
         self.sprite = tileset['ogre_hit']
-        self.speed = [x/10 for x in self.speed]
-        print('Ogre is damaged')
+        self.life -= 1
+        pygame.event.post(pygame.event.Event(SCORE,{'value': 4-self.life}))
+        if self.life < 0 : self.state = 'removed'

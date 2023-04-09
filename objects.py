@@ -9,6 +9,7 @@ import structures
 import player
 
 SHURIKEN_DROP = pygame.USEREVENT + 1
+SCORE = pygame.USEREVENT + 2
 
 class Shuriken:
     def __init__(self, pos, speed):
@@ -57,15 +58,19 @@ class Shuriken:
 
             if target.state == 'dashing' :
                 self.state = 'removed'
+                pygame.event.post(pygame.event.Event(SCORE,{'value': 1}))
                 if target.ammo <= 5 : target.ammo += 1
 
             if target.state == 'normal' :
                 self.bounce(target)
                 target.damage()
 
-        if type(target) == ennemies.Ogre:
+        if type(target) == ennemies.Ogre and target.state != 'hurting':
+            target.damage(self.speed)
             self.bounce(target)
-            target.damage()
+
+        if type(target) == structures.Shrine:
+            self.bounce(target)
 
     def bounce(self, target):
         BOUNCE_X_SPEED = 0.5
@@ -96,3 +101,10 @@ class Pickup:
         if self.style == 'shuriken':
             if hero.ammo < 5 : hero.ammo += 1
         self.removable = True
+
+class OgreSlam:
+    def __init__(self, pos):
+        self.pos = [x for x in pos]
+        self.rect = pygame.Rect(-100, -100, 32, 32)
+        self.rect.center = self.pos
+        self.sprite = tileset('slam1')
