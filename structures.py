@@ -23,11 +23,11 @@ class Plant:
         self.sprite_pos = ( self.rect.left - self.OFFSET_X, self.rect.top - self.OFFSET_Y )
         self.solid = False
     
-class Rock:
+class Shrine:
     def __init__(self, pos):
         self.rect = pygame.Rect(0, 0, 36, 14)
         self.rect.center = (pos[0], pos[1])
-        self.sprite = tileset['rock_holy']
+        self.sprite = tileset['shrine']
         self.OFFSET_X = 6
         self.OFFSET_Y = 28
         self.sprite_pos = ( self.rect.left - self.OFFSET_X, self.rect.top - self.OFFSET_Y )

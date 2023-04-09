@@ -98,19 +98,19 @@ random_plant_positions = [
     for i in range(28)
 ]
 for pos in random_plant_positions:
-    plant = struct.Plant(pos)
-    object_list.append(plant)
+    object_list.append(struct.Plant(pos))
 
 # generating rock
-rock = struct.Rock((240,160))
-object_list.append(rock)
+object_list.append(struct.Shrine((240,160)))
 
 # generating ennemies
-bads_coords = [ (96,112),(380,112),(380,212),(96,212) ]
-for i in range(len(bads_coords)) :
-    if i%2==0 : bad = ennemies.Kappa(bads_coords[i])
-    else : bad = ennemies.Ogre(bads_coords[i])
-    object_list.append(bad)
+# bads_coords = [ (96,112),(380,112),(380,212),(96,212) ]
+# for i in range(len(bads_coords)) :
+#     if i%2==0 : bad = ennemies.Kappa(bads_coords[i])
+#     else : bad = ennemies.Ogre(bads_coords[i])
+#     object_list.append(bad)
+for coord in [(96,112),(380,212)] :
+    object_list.append(ennemies.Ogre(coord))
 
 
 #–––––––––––––––#
@@ -167,6 +167,11 @@ while True:
 
         # ogres
         # ogres = [obj for obj in object_list if type(obj) == ennemies.Ogre]
+        for ogre in [obj for obj in object_list if type(obj) == ennemies.Ogre]:
+            if ogre.state == 'normal' : ogre.move(hero)
+            ogre.update()
+
+        #pickups
         for pickup in [obj for obj in object_list if type(obj) == objects.Pickup]:
             if pickup.rect.colliderect(hero.rect):
                 pickup.get_pickedup(hero)
