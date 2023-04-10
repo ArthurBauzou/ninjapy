@@ -63,7 +63,7 @@ class Shuriken:
 
             if target.state == 'dashing' :
                 self.state = 'removed'
-                pygame.event.post(pygame.event.Event(SCORE,{'value': 1}))
+                pygame.event.post(pygame.event.Event(SCORE,{'value': 1, 'style': 'multi'}))
                 pygame.mixer.Sound.play(catch_sound)
                 if target.ammo <= 5 : target.ammo += 1
 

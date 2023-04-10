@@ -124,7 +124,7 @@ class Ogre:
         self.charge_timer = 0
         self.sprite = tileset['ogre_hit']
         self.life -= 1
-        pygame.event.post(pygame.event.Event(SCORE,{'value': 4-self.life}))
+        pygame.event.post(pygame.event.Event(SCORE,{'value': 4-self.life, 'style': 'score'}))
         pygame.mixer.Sound.play(outch_sound)
         if self.life < 1 :
             pygame.mixer.Sound.play(death_sound)

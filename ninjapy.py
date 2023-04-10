@@ -21,10 +21,10 @@ def get_solid_objects(list) -> list:
     solid_objects = [obj.rect for obj in list if obj.solid]
     return solid_objects
 
-def game_reset(hero, list):
-    hero.ammo = 5
-    hero.health = 3
-    list = []
+# def game_reset(hero, list):
+#     hero.ammo = 5
+#     hero.health = 3
+#     list = []
 
 
 #–––––––––––––––––––––#
@@ -52,10 +52,16 @@ tiles = pygame.image.load('assets/tiles.png').convert()
 game_over_splash = pygame.image.load('assets/gameover.png').convert()
 
 ## INTERFACE
+score_font = pygame.font.Font('assets/kloudt.regular.otf', 24)
+multi_font = pygame.font.Font('assets/kloudt.regular.otf', 16)
+score_back_rect = pygame.Rect(0,0,96,32)
+score_back_rect.topright = (480,0)
+
 score = 0
-myfont = pygame.font.Font('assets/kloudt.regular.otf', 24)
-score_rect = pygame.Rect(0,0,96,32)
-score_rect.topright = (480,0)
+score_multi = 1
+multi_reset_timer = 0
+MUTLI_RESET = 240
+
 
 health_rect = pygame.Rect(0,0,80,16)
 flower_rects = [ pygame.Rect(16 + x*16, 0, 16, 16) for x in range(4) ]
@@ -111,8 +117,8 @@ object_list.append(struct.Shrine((240,160)))
 # generating ennemies
 spawn_timer = 750 + random.choice(range(500))
 spawn_locations = [(96,112),(380,212)]
-for pos in spawn_locations :
-    object_list.append(ennemies.Ogre(pos))
+# for pos in spawn_locations :
+#     object_list.append(ennemies.Ogre(pos))
 
 #–––––––––––––––#
 ### MAIN LOOP ###
@@ -128,7 +134,7 @@ while True:
             # if event.type == pygame.KEYDOWN:
             #     if event.key == pygame.K_r:
             #         game_reset(hero, shuriken_list)
-        screen.blit( game_over_splash, (0,0))
+        screen.blit(game_over_splash, (0,0))
         mixer.music.stop()
 ## MAIN GAME
     else:
@@ -140,7 +146,10 @@ while True:
             if event.type == SCREENSHAKE:
                 screenshake_timer = 8
             if event.type == SCORE:
-                score += event.value
+                if event.style == 'multi':
+                    score_multi += event.value
+                    multi_reset_timer = MUTLI_RESET
+                else : score += event.value * score_multi
             if event.type == CREATE_PICKUP:
                 object_list.append(objects.Pickup(event.pos, event.style))
             if event.type == pygame.KEYDOWN:
@@ -231,11 +240,19 @@ while True:
 
     ## DRAWING INTERFACE
         #score
-        screen.blit(tiles, score_rect, tileset['score_back'])
-        score_message = myfont.render(str(score), False, 'orangered3')
+        screen.blit(tiles, score_back_rect, tileset['score_back'])
+        score_message = score_font.render(str(score), False, 'orangered3')
         score_message_rect = score_message.get_rect()
-        score_message_rect.topright = (score_rect.topright[0]-10,score_rect.topright[1]-1)
+        score_message_rect.topright = (score_back_rect.topright[0]-10,score_back_rect.topright[1]-1)
         screen.blit(score_message, score_message_rect)
+        #multiplier
+        if score_multi > 1 :
+            multi_reset_timer -= 1
+            if multi_reset_timer == 0 : score_multi = 1
+            multi_message = multi_font.render(str(f'x{score_multi}'), False, 'orangered3')
+            multi_message_rect = multi_message.get_rect()
+            multi_message_rect.topleft = (400,4)
+            screen.blit(multi_message, multi_message_rect)
         #health
         screen.blit(tiles, health_rect, tileset['branch'])
         for n in range(hero.health):
