@@ -1,5 +1,5 @@
-import pygame
-import random
+import pygame, random
+from pygame import mixer
 
 from sprite_map import tileset
 from conf import GAME_HEIGHT, GAME_WIDTH
@@ -8,8 +8,16 @@ import ennemies
 import structures
 import player
 
+mixer.init()
+catch_sound = pygame.mixer.Sound("assets/sounds/bling.wav")
+pickup_sound = pygame.mixer.Sound("assets/sounds/step.wav")
+catch_sound.set_volume(0.4)
+pickup_sound.set_volume(0.3)
+
 SHURIKEN_DROP = pygame.USEREVENT + 1
 SCORE = pygame.USEREVENT + 2
+
+
 
 class Shuriken:
     def __init__(self, pos, speed):
@@ -20,9 +28,6 @@ class Shuriken:
         self.sprite = tileset['shuriken1']
         self.state = 'inactive'
         self.anim_timer = 0
-
-    # def move(self):
-
 
     def warp(self):
         if self.rect.center[0] > GAME_WIDTH: self.pos[0] = 0
@@ -59,6 +64,7 @@ class Shuriken:
             if target.state == 'dashing' :
                 self.state = 'removed'
                 pygame.event.post(pygame.event.Event(SCORE,{'value': 1}))
+                pygame.mixer.Sound.play(catch_sound)
                 if target.ammo <= 5 : target.ammo += 1
 
             if target.state == 'normal' :
@@ -99,6 +105,7 @@ class Pickup:
 
     def get_pickedup(self, hero):
         if self.style == 'shuriken':
+            pygame.mixer.Sound.play(pickup_sound)
             if hero.ammo < 5 : hero.ammo += 1
         self.removable = True
 

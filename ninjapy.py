@@ -1,5 +1,5 @@
-import pygame
-import random
+import pygame, random
+from pygame import mixer
 from sys import exit
 import ctypes
 ctypes.windll.user32.SetProcessDPIAware()
@@ -32,6 +32,7 @@ def game_reset(hero, list):
 #–––––––––––––––––––––#
 
 pygame.init()
+mixer.init()
 pygame.display.set_caption('Ninjapy')
 clock = pygame.time.Clock()
 win = pygame.display.set_mode((GAME_WIDTH * GAME_SCALE,GAME_HEIGHT * GAME_SCALE))
@@ -39,8 +40,12 @@ screen = pygame.Surface((GAME_WIDTH, GAME_HEIGHT))
 last_arrow = pygame.K_SPACE
 screen_position = [0,0]
 game_frames = 0
-# sprite_id = 0
 screenshake_timer = 0
+
+## MUSIC
+music = pygame.mixer.music.load('assets\Tenchu2_Shiren.mp3')
+mixer.music.set_volume(0.2)
+mixer.music.play(-1)
 
 ## GRAPHICS
 tiles = pygame.image.load('assets/tiles.png').convert()
@@ -81,7 +86,6 @@ for x in range(15):
 ## ACTORS
 shuriken_list = []
 object_list = []
-ogres =  []
 
 # generating player
 hero = player.Player([240,180])
@@ -101,19 +105,14 @@ random_plant_positions = [
 for pos in random_plant_positions:
     object_list.append(struct.Plant(pos))
 
-# generating rock
+# generating shrine
 object_list.append(struct.Shrine((240,160)))
 
 # generating ennemies
-# bads_coords = [ (96,112),(380,112),(380,212),(96,212) ]
-# for i in range(len(bads_coords)) :
-#     if i%2==0 : bad = ennemies.Kappa(bads_coords[i])
-#     else : bad = ennemies.Ogre(bads_coords[i])
-#     object_list.append(bad)
-for coord in [(96,112),(380,212)] :
-# for coord in [(96,112)] :
-    object_list.append(ennemies.Ogre(coord))
-
+spawn_timer = 750 + random.choice(range(500))
+spawn_locations = [(96,112),(380,212)]
+for pos in spawn_locations :
+    object_list.append(ennemies.Ogre(pos))
 
 #–––––––––––––––#
 ### MAIN LOOP ###
@@ -126,10 +125,11 @@ while True:
             if event.type == pygame.QUIT:
                 pygame.quit()
                 exit()
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_r:
-                    game_reset(hero, shuriken_list)
+            # if event.type == pygame.KEYDOWN:
+            #     if event.key == pygame.K_r:
+            #         game_reset(hero, shuriken_list)
         screen.blit( game_over_splash, (0,0))
+        mixer.music.stop()
 ## MAIN GAME
     else:
     ## EVENTS
@@ -146,16 +146,13 @@ while True:
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_x:
                     hero.shoot(shuriken_list)
-                if event.key == pygame.K_r:
-                    game_reset(hero, shuriken_list)              
-                if event.key == pygame.K_t:
-                    # use for debug
-                    print(shuriken_list)
-                    pass
+                # if event.key == pygame.K_r:
+                #     game_reset(hero, shuriken_list)              
                 if event.key in [pygame.K_UP, pygame.K_DOWN, pygame.K_LEFT, pygame.K_RIGHT]:
                     if last_arrow == event.key \
                     and game_frames - hero.input_dash_timer <= hero.DASH_DOUBLE_TAP_WINDOW:
                         hero.dash(event.key)
+                        
                     last_arrow = event.key
                     hero.input_dash_timer = game_frames
 
@@ -170,24 +167,29 @@ while True:
         hero.update()
 
         # ogres
-        # ogres = [obj for obj in object_list if type(obj) == ennemies.Ogre]
-        for ogre in [obj for obj in object_list if type(obj) == ennemies.Ogre]:
+        ogres = [obj for obj in object_list if type(obj) == ennemies.Ogre]
+        for ogre in ogres:
 
             if ogre.charge_rect.colliderect(hero.rect) and ogre.state == 'normal': 
                 ogre.charge()
-            if (ogre.state == 'charging' and ogre.rect.colliderect(hero.rect)) \
+            if ogre.state == 'charging' and ogre.rect.colliderect(hero.rect) \
             or ogre.charge_timer == 1:
                 ogre.slam(hero)
             if ogre.state not in ['hurting', 'slamming'] : ogre.move(hero)
             ogre.update()
             if ogre.state == 'removed' : object_list.remove(ogre)
 
+        # spawn
+        spawn_timer -= 1
+        if len(ogres) < 5 and spawn_timer < 0 :
+            object_list.append(ennemies.Ogre(random.choice(spawn_locations)))
+            spawn_timer = 750 + random.choice(range(500))
+
         #pickups
         for pickup in [obj for obj in object_list if type(obj) == objects.Pickup]:
             if pickup.rect.colliderect(hero.rect):
                 pickup.get_pickedup(hero)
             if pickup.removable : object_list.remove(pickup)
-
 
         # shuriken
         for shuriken in shuriken_list:

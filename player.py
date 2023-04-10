@@ -1,9 +1,22 @@
 import pygame
 import random
+from pygame import mixer
 
 from sprite_map import tileset
 import objects as objects
 from conf import GAME_WIDTH, GAME_HEIGHT
+
+## SOUNDS
+mixer.init()
+dash_sound = pygame.mixer.Sound("assets/sounds/dash.wav")
+shoot_sound = pygame.mixer.Sound("assets/sounds/shoot.wav")
+hurt_sound = pygame.mixer.Sound("assets/sounds/hurt.wav")
+bounce_sound = pygame.mixer.Sound("assets/sounds/bounce.wav")
+dash_sound.set_volume(0.3)
+shoot_sound.set_volume(0.2)
+hurt_sound.set_volume(0.8)
+bounce_sound.set_volume(0.2)
+
 
 ## FUNCTIONS
 def isNear(a,b,sensibility):
@@ -88,6 +101,7 @@ class Player:
             shuriken = objects.Shuriken(self.rect.center, speed)
             list.append(shuriken)
             self.ammo -= 1
+            pygame.mixer.Sound.play(shoot_sound)
 
     def dash(self, key):
         DASH_DURATION = 24
@@ -98,6 +112,7 @@ class Player:
             self.state = 'dashing'
             self.sprite = tileset['ninja_dash']
             for i in range(2): self.speed[i] += self.DASH_ACCELERATION*global_directions[key][i]
+            pygame.mixer.Sound.play(dash_sound)
     
     def update(self):
         # damage
@@ -125,15 +140,19 @@ class Player:
             ACCELBOUNCE = 2
             if self.rect.colliderect(obj):
                 if isNear(self.rect.left, obj.right, 3): 
+                    pygame.mixer.Sound.play(bounce_sound)
                     self.speed[0] = ACCELBOUNCE
                     self.pos[0] += BOUNCE
                 if isNear(self.rect.right, obj.left, 3): 
+                    pygame.mixer.Sound.play(bounce_sound)
                     self.speed[0] = - ACCELBOUNCE
                     self.pos[0] -= BOUNCE
                 if isNear(self.rect.bottom, obj.top, 3): 
+                    pygame.mixer.Sound.play(bounce_sound)
                     self.speed[1] = -ACCELBOUNCE
                     self.pos[1] -= BOUNCE
                 if isNear(self.rect.top, obj.bottom, 3): 
+                    pygame.mixer.Sound.play(bounce_sound)
                     self.speed[1] = ACCELBOUNCE
                     self.pos[1] += BOUNCE
 
@@ -152,4 +171,5 @@ class Player:
         self.sprite = tileset['ninja_hurt']
         self.hurt_timer = HURT_COOLDOWN
         pygame.event.post(pygame.event.Event(SCREENSHAKE))
+        pygame.mixer.Sound.play(hurt_sound)
 

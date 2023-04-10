@@ -1,5 +1,12 @@
 import pygame, random
+from pygame import mixer
 from sprite_map import tileset
+
+mixer.init()
+outch_sound = pygame.mixer.Sound("assets\sounds\sm64_whomp.wav")
+death_sound = pygame.mixer.Sound("assets\sounds\ogre_destroyy.wav")
+outch_sound.set_volume(0.3)
+death_sound.set_volume(0.4)
 
 # cette fonction renvoie un vecteur type (a,b) ou a et b ne peuvent avoir que les valeurs -1, 0 ou 1.
 def get_target_direction(self_rect:pygame.Rect,target_rect:pygame.Rect):
@@ -41,7 +48,7 @@ class Ogre:
         self.OFFSET_Y = 14
         self.sprite_pos = ( self.rect.left - self.OFFSET_X, self.rect.top - self.OFFSET_Y )
         self.solid = True
-        self.life = 4
+        self.life = 3
         self.MAX_SPEED = 0.4 + random.choice(range(3))/10
 
         # behaviour
@@ -52,6 +59,8 @@ class Ogre:
         self.charge_timer = 0
         self.slam_timer = 0
         self.max_speed = self.MAX_SPEED
+        self.destroy = False
+        self.wiggle = 2
 
     def update(self):
         for i in range(2): self.pos[i] += self.speed[i]
@@ -69,8 +78,12 @@ class Ogre:
         # damage
         elif self.hurt_timer > 0 :
             self.hurt_timer -= 1
-            if self.hurt_timer %10==0 : self.pos[1] -=2
-            elif self.hurt_timer %5==0: self.pos[1] +=2
+            if self.hurt_timer %10==0 : self.pos[0] -= self.wiggle
+            elif self.hurt_timer %5==0: self.pos[0] += self.wiggle
+            # destroy
+            if self.destroy and self.hurt_timer == 1 : self.state = 'removed'
+            if self.destroy and self.hurt_timer %2==0:
+                self.sprite[3] -= 1
         # slam
         elif self.slam_timer > 0 :
             self.slam_timer -= 1
@@ -89,7 +102,6 @@ class Ogre:
             if x <= -self.max_speed: self.speed[i] = -self.max_speed
 
     def charge(self):
-        print('ogre should charge')
         self.state = 'charging'
         self.sprite = tileset['ogre_charge']
         self.max_speed = 1.2
@@ -113,4 +125,12 @@ class Ogre:
         self.sprite = tileset['ogre_hit']
         self.life -= 1
         pygame.event.post(pygame.event.Event(SCORE,{'value': 4-self.life}))
-        if self.life < 0 : self.state = 'removed'
+        pygame.mixer.Sound.play(outch_sound)
+        if self.life < 1 :
+            pygame.mixer.Sound.play(death_sound)
+            self.wiggle = 4
+            self.speed = [0,0]
+            self.sprite = [x for x in self.sprite]
+            self.hurt_timer = 64
+            self.destroy = True
+            
