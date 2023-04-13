@@ -18,7 +18,6 @@ SHURIKEN_DROP = pygame.USEREVENT + 1
 SCORE = pygame.USEREVENT + 2
 
 
-
 class Shuriken:
     def __init__(self, pos, speed):
         self.pos = [x for x in pos]

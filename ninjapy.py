@@ -10,6 +10,7 @@ import player as player
 import structures as struct
 import ennemies as ennemies
 import objects as objects
+import menu as menu
 
 def get_z(obj):
     return obj.rect.bottom
@@ -21,10 +22,17 @@ def get_solid_objects(list) -> list:
     solid_objects = [obj.rect for obj in list if obj.solid]
     return solid_objects
 
-# def game_reset(hero, list):
-#     hero.ammo = 5
-#     hero.health = 3
-#     list = []
+def game_reset(hero, obj_list, shrk_list, score):
+    score['score'] = 0
+    score['multi'] = 1
+    hero.ammo = 5
+    hero.health = 3
+    hero.pos = [240,180]
+    purgelist = [obj for obj in obj_list if type(obj) == ennemies.Ogre or type(obj) == objects.Pickup]
+    for obj in purgelist : obj_list.remove(obj)
+    for shrk in shrk_list : shrk_list.remove(shrk)
+    object_list.append(ennemies.Ogre(random.choice([(96,112),(380,212)])))
+    pass
 
 
 #–––––––––––––––––––––#
@@ -42,30 +50,48 @@ screen_position = [0,0]
 game_frames = 0
 screenshake_timer = 0
 
+## STATES
+is_in_menu = True
+
+## MENU
+menu_background = pygame.Surface((GAME_WIDTH, GAME_HEIGHT))
+menu_background.fill('#323c39')
+main_menu = menu.Menu()
+game_over_bg = pygame.Surface((GAME_WIDTH, GAME_HEIGHT))
+game_over_bg.fill('orangered3')
+game_over_bg.set_alpha(1)
+
 ## MUSIC
-music = pygame.mixer.music.load('assets\Tenchu2_Shiren.mp3')
-mixer.music.set_volume(0.2)
+menu_music = pygame.mixer.music.load('assets\menu_music.mp3')
+mixer.music.set_volume(0.5)
 mixer.music.play(-1)
 
 ## GRAPHICS
+menu_title_art = pygame.image.load('assets/title_back.png').convert_alpha()
+menu_ogre = pygame.image.load('assets/title_ogre.png').convert_alpha()
+menu_texts = pygame.image.load('assets/title_texts.png').convert()
+menu_contols = pygame.image.load('assets/instructions.png').convert_alpha()
 tiles = pygame.image.load('assets/tiles.png').convert()
-game_over_splash = pygame.image.load('assets/gameover.png').convert()
+game_over_splash = pygame.image.load('assets/game_over.png').convert()
 
 ## INTERFACE
+# score
 score_font = pygame.font.Font('assets/kloudt.regular.otf', 24)
 multi_font = pygame.font.Font('assets/kloudt.regular.otf', 16)
 score_back_rect = pygame.Rect(0,0,96,32)
 score_back_rect.topright = (480,0)
-
-score = 0
-score_multi = 1
+score = {
+    'score': 0,
+    'multi': 1
+}
+# score = 0
+# score_multi = 1
 multi_reset_timer = 0
 MUTLI_RESET = 240
-
-
+# health
 health_rect = pygame.Rect(0,0,80,16)
 flower_rects = [ pygame.Rect(16 + x*16, 0, 16, 16) for x in range(4) ]
-
+# ammo
 belt_rect = pygame.Rect(0,16,80,16)
 ammo_rects = [ pygame.Rect(12 + x*11, 16, 16, 16) for x in range(5) ]
 
@@ -115,27 +141,79 @@ for pos in random_plant_positions:
 object_list.append(struct.Shrine((240,160)))
 
 # generating ennemies
-spawn_timer = 750 + random.choice(range(500))
+spawn_timer = 250 + random.choice(range(500))
 spawn_locations = [(96,112),(380,212)]
-# for pos in spawn_locations :
-#     object_list.append(ennemies.Ogre(pos))
+object_list.append(ennemies.Ogre(random.choice(spawn_locations)))
 
 #–––––––––––––––#
 ### MAIN LOOP ###
 #–––––––––––––––#
 
 while True:
-## GAME OVER
-    if hero.health == 0 :
+## MENU
+    if is_in_menu :
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 exit()
-            # if event.type == pygame.KEYDOWN:
-            #     if event.key == pygame.K_r:
-            #         game_reset(hero, shuriken_list)
-        screen.blit(game_over_splash, (0,0))
-        mixer.music.stop()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_UP: main_menu.go_up()
+                if event.key == pygame.K_DOWN: main_menu.go_down()
+                if event.key in [pygame.K_RETURN,pygame.K_x]  :
+                    if main_menu.state == 'play':
+                        mixer.music.stop()
+                        pygame.mixer.music.load('assets\Tenchu2_Shiren.mp3')
+                        mixer.music.set_volume(0.2)
+                        mixer.music.play(-1)
+                        is_in_menu = False
+                        game_reset(hero, object_list, shuriken_list, score)
+                    if main_menu.state == 'quit':
+                        pygame.quit()
+                        exit()
+                    if main_menu.state == 'controls':
+                        main_menu.show_controls = not main_menu.show_controls
+
+        # menu behavior
+        if main_menu.title_pos[1] < 5 : main_menu.title_pos[1] += 3
+        main_menu.ogre_peek()
+        main_menu.ogre_blink()
+        main_menu.update()
+
+        # draw menu
+        screen.blit(menu_background, (0,0))
+        screen.blit(menu_ogre, main_menu.ogre_pos, main_menu.ogre_sprite)
+        screen.blit(menu_title_art, (0,0))
+        screen.blit(main_menu.title_back, main_menu.title_pos)
+        for spr in main_menu.title_sprites :
+            screen.blit(menu_texts, spr['pos'], spr['sprite'])
+        for spr in main_menu.menu_sprites :
+            screen.blit(menu_texts, spr['rect'], spr['sprite'])
+        screen.blit(menu_texts, main_menu.arrow_pos, main_menu.arrow_sprite)
+        if main_menu.show_controls : 
+            screen.blit(menu_contols, main_menu.controls_pos)
+
+## GAME OVER
+    elif hero.health == 0 :
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                exit()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_r:
+                    game_reset(hero, object_list, shuriken_list, score)
+                if event.key == pygame.K_m:
+                    mixer.music.stop()
+                    pygame.mixer.music.load('assets\menu_music.mp3')
+                    mixer.music.set_volume(0.2)
+                    mixer.music.play(-1)
+                    main_menu.state_index = 0
+                    main_menu.title_pos = [0,-64]
+                    main_menu.ogre_pos = [0,320]
+                    main_menu.ogre_speed = [1.5,2]
+                    main_menu.state = 'play'
+                    is_in_menu = True
+        screen.blit(game_over_bg, (0,0))
+        screen.blit(game_over_splash, (80,70))
 ## MAIN GAME
     else:
     ## EVENTS
@@ -147,16 +225,14 @@ while True:
                 screenshake_timer = 8
             if event.type == SCORE:
                 if event.style == 'multi':
-                    score_multi += event.value
+                    score['multi'] += event.value
                     multi_reset_timer = MUTLI_RESET
-                else : score += event.value * score_multi
+                else : score['score'] += event.value * score['multi']
             if event.type == CREATE_PICKUP:
                 object_list.append(objects.Pickup(event.pos, event.style))
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_x:
-                    hero.shoot(shuriken_list)
-                # if event.key == pygame.K_r:
-                #     game_reset(hero, shuriken_list)              
+                    hero.shoot(shuriken_list)       
                 if event.key in [pygame.K_UP, pygame.K_DOWN, pygame.K_LEFT, pygame.K_RIGHT]:
                     if last_arrow == event.key \
                     and game_frames - hero.input_dash_timer <= hero.DASH_DOUBLE_TAP_WINDOW:
@@ -192,7 +268,7 @@ while True:
         spawn_timer -= 1
         if len(ogres) < 5 and spawn_timer < 0 :
             object_list.append(ennemies.Ogre(random.choice(spawn_locations)))
-            spawn_timer = 750 + random.choice(range(500))
+            spawn_timer = 750 - (score['score']*5) + random.choice(range(500))
 
         #pickups
         for pickup in [obj for obj in object_list if type(obj) == objects.Pickup]:
@@ -241,15 +317,15 @@ while True:
     ## DRAWING INTERFACE
         #score
         screen.blit(tiles, score_back_rect, tileset['score_back'])
-        score_message = score_font.render(str(score), False, 'orangered3')
+        score_message = score_font.render(str(score['score']), False, 'orangered3')
         score_message_rect = score_message.get_rect()
         score_message_rect.topright = (score_back_rect.topright[0]-10,score_back_rect.topright[1]-1)
         screen.blit(score_message, score_message_rect)
         #multiplier
-        if score_multi > 1 :
+        if score['multi'] > 1 :
             multi_reset_timer -= 1
-            if multi_reset_timer == 0 : score_multi = 1
-            multi_message = multi_font.render(str(f'x{score_multi}'), False, 'orangered3')
+            if multi_reset_timer == 0 : score['multi'] = 1
+            multi_message = multi_font.render(str(f'x{score["multi"]}'), False, 'orangered3')
             multi_message_rect = multi_message.get_rect()
             multi_message_rect.topleft = (400,4)
             screen.blit(multi_message, multi_message_rect)

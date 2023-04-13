@@ -5,6 +5,8 @@ from sprite_map import tileset
 mixer.init()
 outch_sound = pygame.mixer.Sound("assets\sounds\sm64_whomp.wav")
 death_sound = pygame.mixer.Sound("assets\sounds\ogre_destroyy.wav")
+ogre_slam = pygame.mixer.Sound("assets\sounds\slam.wav")
+ogre_slam.set_volume(0.2)
 outch_sound.set_volume(0.3)
 death_sound.set_volume(0.4)
 
@@ -114,6 +116,7 @@ class Ogre:
         self.sprite = tileset['ogre_slam']
         self.slam_timer = 24
         self.slam_rect.center = self.rect.center
+        pygame.mixer.Sound.play(outch_sound)
         if self.slam_rect.colliderect(target.rect) :
             target.damage()
 
@@ -127,10 +130,11 @@ class Ogre:
         pygame.event.post(pygame.event.Event(SCORE,{'value': 4-self.life, 'style': 'score'}))
         pygame.mixer.Sound.play(outch_sound)
         if self.life < 1 :
-            pygame.mixer.Sound.play(death_sound)
             self.wiggle = 4
             self.speed = [0,0]
             self.sprite = [x for x in self.sprite]
             self.hurt_timer = 64
             self.destroy = True
+            pygame.event.post(pygame.event.Event(SCORE,{'value': 1, 'style': 'multi'}))
+            pygame.mixer.Sound.play(death_sound)
             
