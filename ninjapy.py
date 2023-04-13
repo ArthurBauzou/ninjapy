@@ -5,12 +5,17 @@ import ctypes
 ctypes.windll.user32.SetProcessDPIAware()
 
 from sprite_map import tileset
-from conf import GAME_HEIGHT, GAME_SCALE, GAME_SPEED, GAME_WIDTH
+from conf import GAME_HEIGHT, GAME_SCALE, GAME_SPEED, GAME_WIDTH, MULTI_RESET
 import player as player
 import structures as struct
 import ennemies as ennemies
 import objects as objects
 import menu as menu
+
+
+#–––––––––––––––––––––#
+### FONCTIONS ###
+#–––––––––––––––––––––#
 
 def get_z(obj):
     return obj.rect.bottom
@@ -22,17 +27,40 @@ def get_solid_objects(list) -> list:
     solid_objects = [obj.rect for obj in list if obj.solid]
     return solid_objects
 
-def game_reset(hero, obj_list, shrk_list, score):
-    score['score'] = 0
-    score['multi'] = 1
-    hero.ammo = 5
-    hero.health = 3
-    hero.pos = [240,180]
-    purgelist = [obj for obj in obj_list if type(obj) == ennemies.Ogre or type(obj) == objects.Pickup]
-    for obj in purgelist : obj_list.remove(obj)
-    for shrk in shrk_list : shrk_list.remove(shrk)
-    object_list.append(ennemies.Ogre(random.choice([(96,112),(380,212)])))
-    pass
+
+
+class Game:
+    def __init__(self, player):
+        #score
+        self.score = 0
+        self.multi = 1
+        self.multi_reset_timer = 0
+        #ogres
+        self.spawn_locations = [(96,112),(380,212)]
+        self.object_list = []
+        self.object_list.append(ennemies.Ogre(random.choice(self.spawn_locations)))
+        self.spawn_timer = 250 + random.choice(range(500))
+        #decor
+        self.spawn_bamboos()
+        self.spawn_plants(28)
+        self.object_list.append(struct.Shrine((240,160)))
+        #heros
+        self.object_list.append(player)
+        self.shuriken_list = []
+
+    def spawn_bamboos(self):
+        bamboo_positions = [(64,64),(84,84),(416,264),(396,244)]
+        for pos in (bamboo_positions):
+            bamboo = struct.Bamboo(pos)
+            self.object_list.append(bamboo)
+
+    def spawn_plants(self, number):
+        random_plant_positions = [
+            (random.choice(range(32,448,16)),random.choice(range(32,288,16)))
+            for i in range(number)
+        ]
+        for pos in random_plant_positions:
+            self.object_list.append(struct.Plant(pos))
 
 
 #–––––––––––––––––––––#
@@ -52,19 +80,18 @@ screenshake_timer = 0
 
 ## STATES
 is_in_menu = True
+is_in_game_over = False
 
 ## MENU
 menu_background = pygame.Surface((GAME_WIDTH, GAME_HEIGHT))
 menu_background.fill('#323c39')
-main_menu = menu.Menu()
-game_over_bg = pygame.Surface((GAME_WIDTH, GAME_HEIGHT))
-game_over_bg.fill('orangered3')
+game_over_bg = pygame.Surface((GAME_WIDTH, GAME_HEIGHT-128))
+game_over_bg.fill('burlywood4')
 game_over_bg.set_alpha(1)
 
-## MUSIC
-menu_music = pygame.mixer.music.load('assets\menu_music.mp3')
-mixer.music.set_volume(0.5)
-mixer.music.play(-1)
+## SOUNDS
+menu_confirm = pygame.mixer.Sound("assets/sounds/dash.wav")
+menu_confirm.set_volume(0.4)
 
 ## GRAPHICS
 menu_title_art = pygame.image.load('assets/title_back.png').convert_alpha()
@@ -80,14 +107,6 @@ score_font = pygame.font.Font('assets/kloudt.regular.otf', 24)
 multi_font = pygame.font.Font('assets/kloudt.regular.otf', 16)
 score_back_rect = pygame.Rect(0,0,96,32)
 score_back_rect.topright = (480,0)
-score = {
-    'score': 0,
-    'multi': 1
-}
-# score = 0
-# score_multi = 1
-multi_reset_timer = 0
-MUTLI_RESET = 240
 # health
 health_rect = pygame.Rect(0,0,80,16)
 flower_rects = [ pygame.Rect(16 + x*16, 0, 16, 16) for x in range(4) ]
@@ -108,6 +127,11 @@ SCORE = pygame.USEREVENT + 2
 ### GENERATING LEVEL ###
 #––––––––––––––––––––––#
 
+## MUSIC
+menu_music = pygame.mixer.music.load('assets\menu_music.mp3')
+mixer.music.set_volume(0.5)
+mixer.music.play(-1)
+
 ## BACKGROUND
 background = pygame.Surface((GAME_WIDTH, GAME_HEIGHT))
 for x in range(15):
@@ -115,35 +139,9 @@ for x in range(15):
         style = random.choice(['grass1','grass2'])
         background.blit(tiles, (32*x,32*y), tileset[style])
 
-## ACTORS
-shuriken_list = []
-object_list = []
+main_menu = menu.Menu()
 
-# generating player
-hero = player.Player([240,180])
-object_list.append(hero)
 
-# generating bamboos
-bamboo_positions = [(64,64),(84,84),(416,264),(396,244)]
-for pos in (bamboo_positions):
-    bamboo = struct.Bamboo(pos)
-    object_list.append(bamboo)
-
-# generating plants
-random_plant_positions = [
-    (random.choice(range(32,448,16)),random.choice(range(32,288,16)))
-    for i in range(28)
-]
-for pos in random_plant_positions:
-    object_list.append(struct.Plant(pos))
-
-# generating shrine
-object_list.append(struct.Shrine((240,160)))
-
-# generating ennemies
-spawn_timer = 250 + random.choice(range(500))
-spawn_locations = [(96,112),(380,212)]
-object_list.append(ennemies.Ogre(random.choice(spawn_locations)))
 
 #–––––––––––––––#
 ### MAIN LOOP ###
@@ -162,11 +160,13 @@ while True:
                 if event.key in [pygame.K_RETURN,pygame.K_x]  :
                     if main_menu.state == 'play':
                         mixer.music.stop()
-                        pygame.mixer.music.load('assets\Tenchu2_Shiren.mp3')
-                        mixer.music.set_volume(0.2)
+                        pygame.mixer.music.load('assets\game_music.mp3')
+                        mixer.music.set_volume(0.5)
                         mixer.music.play(-1)
+                        pygame.mixer.Sound.play(menu_confirm)
+                        hero = player.Player([240,180])
+                        game = Game(hero)
                         is_in_menu = False
-                        game_reset(hero, object_list, shuriken_list, score)
                     if main_menu.state == 'quit':
                         pygame.quit()
                         exit()
@@ -193,27 +193,29 @@ while True:
             screen.blit(menu_contols, main_menu.controls_pos)
 
 ## GAME OVER
-    elif hero.health == 0 :
+    elif is_in_game_over :
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 exit()
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_r:
-                    game_reset(hero, object_list, shuriken_list, score)
+                    del game, hero
+                    hero = player.Player([240,180])
+                    game = Game(hero)
+                    is_in_game_over = False
                 if event.key == pygame.K_m:
+                    del main_menu
+                    main_menu = menu.Menu()
                     mixer.music.stop()
                     pygame.mixer.music.load('assets\menu_music.mp3')
-                    mixer.music.set_volume(0.2)
+                    mixer.music.set_volume(0.5)
                     mixer.music.play(-1)
-                    main_menu.state_index = 0
-                    main_menu.title_pos = [0,-64]
-                    main_menu.ogre_pos = [0,320]
-                    main_menu.ogre_speed = [1.5,2]
-                    main_menu.state = 'play'
+                    is_in_game_over = False
                     is_in_menu = True
-        screen.blit(game_over_bg, (0,0))
-        screen.blit(game_over_splash, (80,70))
+        screen.blit(game_over_bg, (0,64))
+        screen.blit(game_over_splash, (116,48))
+
 ## MAIN GAME
     else:
     ## EVENTS
@@ -225,14 +227,14 @@ while True:
                 screenshake_timer = 8
             if event.type == SCORE:
                 if event.style == 'multi':
-                    score['multi'] += event.value
-                    multi_reset_timer = MUTLI_RESET
-                else : score['score'] += event.value * score['multi']
+                    game.multi += event.value
+                    game.multi_reset_timer = MULTI_RESET
+                else : game.score += event.value * game.multi
             if event.type == CREATE_PICKUP:
-                object_list.append(objects.Pickup(event.pos, event.style))
+                game.object_list.append(objects.Pickup(event.pos, event.style))
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_x:
-                    hero.shoot(shuriken_list)       
+                    hero.shoot(game.shuriken_list)       
                 if event.key in [pygame.K_UP, pygame.K_DOWN, pygame.K_LEFT, pygame.K_RIGHT]:
                     if last_arrow == event.key \
                     and game_frames - hero.input_dash_timer <= hero.DASH_DOUBLE_TAP_WINDOW:
@@ -244,7 +246,8 @@ while True:
     ## ENTITIES BEHAVIOUR
 
         # player
-        sol_obj = get_solid_objects(object_list)
+        if hero.health == 0 : is_in_game_over = True
+        sol_obj = get_solid_objects(game.object_list)
         if hero.state == 'normal': hero.control_movement()
         if hero.state == 'dashing': hero.bounce(sol_obj)
         else : hero.collide(sol_obj)
@@ -252,7 +255,7 @@ while True:
         hero.update()
 
         # ogres
-        ogres = [obj for obj in object_list if type(obj) == ennemies.Ogre]
+        ogres = [obj for obj in game.object_list if type(obj) == ennemies.Ogre]
         for ogre in ogres:
 
             if ogre.charge_rect.colliderect(hero.rect) and ogre.state == 'normal': 
@@ -262,42 +265,42 @@ while True:
                 ogre.slam(hero)
             if ogre.state not in ['hurting', 'slamming'] : ogre.move(hero)
             ogre.update()
-            if ogre.state == 'removed' : object_list.remove(ogre)
+            if ogre.state == 'removed' : game.object_list.remove(ogre)
 
         # spawn
-        spawn_timer -= 1
-        if len(ogres) < 5 and spawn_timer < 0 :
-            object_list.append(ennemies.Ogre(random.choice(spawn_locations)))
-            spawn_timer = 750 - (score['score']*5) + random.choice(range(500))
+        if len(ogres) == 0 : game.spawn_timer -= 10
+        else : game.spawn_timer -= 1
+        if len(ogres) < 5 and game.spawn_timer < 0 :
+            game.object_list.append(ennemies.Ogre(random.choice(game.spawn_locations)))
+            game.spawn_timer = 750 - (game.score*5) + random.choice(range(500))
 
         #pickups
-        for pickup in [obj for obj in object_list if type(obj) == objects.Pickup]:
+        for pickup in [obj for obj in game.object_list if type(obj) == objects.Pickup]:
             if pickup.rect.colliderect(hero.rect):
                 pickup.get_pickedup(hero)
-            if pickup.removable : object_list.remove(pickup)
+            if pickup.removable : game.object_list.remove(pickup)
 
         # shuriken
-        for shuriken in shuriken_list:
+        for shuriken in game.shuriken_list:
             shuriken.activate(hero.rect)
             shuriken.warp()
             if shuriken.state != 'pickup' : shuriken.animate()
-            for obj in object_list:
+            for obj in game.object_list:
                 if shuriken.rect.colliderect(obj.rect) and shuriken.state == 'active' :
-                    shuriken.collide(obj, shuriken_list)
+                    shuriken.collide(obj)
             shuriken.update()
-            if shuriken.state == 'removed' : shuriken_list.remove(shuriken)
+            if shuriken.state == 'removed' : game.shuriken_list.remove(shuriken)
 
 
     ## DRAWING BACKGROUND
         screen.blit(background, (0,0))
 
     ## DRAWING ENTITIES
-
-        object_list.sort(key=get_z)
-        for obj in object_list:
+        game.object_list.sort(key=get_z)
+        for obj in game.object_list:
             screen.blit(tiles, obj.sprite_pos, obj.sprite)
 
-        for shuriken in shuriken_list:
+        for shuriken in game.shuriken_list:
             screen.blit(tiles, shuriken.rect, shuriken.sprite)
 
     ## DRAWING DEBUG INFO
@@ -317,15 +320,15 @@ while True:
     ## DRAWING INTERFACE
         #score
         screen.blit(tiles, score_back_rect, tileset['score_back'])
-        score_message = score_font.render(str(score['score']), False, 'orangered3')
+        score_message = score_font.render(str(game.score), False, 'orangered3')
         score_message_rect = score_message.get_rect()
         score_message_rect.topright = (score_back_rect.topright[0]-10,score_back_rect.topright[1]-1)
         screen.blit(score_message, score_message_rect)
         #multiplier
-        if score['multi'] > 1 :
-            multi_reset_timer -= 1
-            if multi_reset_timer == 0 : score['multi'] = 1
-            multi_message = multi_font.render(str(f'x{score["multi"]}'), False, 'orangered3')
+        if game.multi > 1 :
+            game.multi_reset_timer -= 1
+            if game.multi_reset_timer == 0 : game.multi = 1
+            multi_message = multi_font.render(str(f'x{game.multi}'), False, 'orangered3')
             multi_message_rect = multi_message.get_rect()
             multi_message_rect.topleft = (400,4)
             screen.blit(multi_message, multi_message_rect)

@@ -116,7 +116,7 @@ class Ogre:
         self.sprite = tileset['ogre_slam']
         self.slam_timer = 24
         self.slam_rect.center = self.rect.center
-        pygame.mixer.Sound.play(outch_sound)
+        pygame.mixer.Sound.play(ogre_slam)
         if self.slam_rect.colliderect(target.rect) :
             target.damage()
 

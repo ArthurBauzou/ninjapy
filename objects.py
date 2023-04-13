@@ -57,14 +57,14 @@ class Shuriken:
         for i in range(2): self.pos[i] += self.speed[i]
         self.rect.center = (self.pos[0], self.pos[1])
 
-    def collide(self, target, list):
+    def collide(self, target):
         if type(target) == player.Player:
 
             if target.state == 'dashing' :
                 self.state = 'removed'
                 pygame.event.post(pygame.event.Event(SCORE,{'value': 1, 'style': 'multi'}))
                 pygame.mixer.Sound.play(catch_sound)
-                if target.ammo <= 5 : target.ammo += 1
+                if target.ammo < 5 : target.ammo += 1
 
             if target.state == 'normal' :
                 self.bounce(target)

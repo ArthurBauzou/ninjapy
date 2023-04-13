@@ -6,6 +6,12 @@ from sprite_map import menu_ogre
 
 menu_states = ['play', 'quit', 'controls']
 
+## sounds
+menu_move = pygame.mixer.Sound("assets/sounds/shoot.wav")
+menu_blocked = pygame.mixer.Sound("assets/sounds/bounce.wav")
+menu_move.set_volume(0.2)
+menu_blocked.set_volume(0.2)
+
 class Menu:
     def __init__(self):
         self.state_index = 0
@@ -23,7 +29,7 @@ class Menu:
         # ogre
         self.ogre_sprite = menu_ogre['ogre']
         self.ogre_pos = [0,320]
-        self.ogre_speed = [1.5,2]
+        self.ogre_speed = [1+random.choice(range(5))/10,2]
         self.ogre_timer = 0
         self.blink_timer = 0
         self.ogre_direction = [1,-1]
@@ -58,15 +64,17 @@ class Menu:
 
     def go_up(self):
         if self.state == 'play':
-            pass
+            pygame.mixer.Sound.play(menu_blocked)
         else : 
+            pygame.mixer.Sound.play(menu_move)
             self.state_index -= 1
             self.state = menu_states[self.state_index]
 
     def go_down(self):
         if self.state == 'controls':
-            pass
+            pygame.mixer.Sound.play(menu_blocked)
         else : 
+            pygame.mixer.Sound.play(menu_move)
             self.state_index += 1
             self.state = menu_states[self.state_index]
 
