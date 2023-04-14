@@ -22,9 +22,12 @@ class Shuriken:
     def __init__(self, pos, speed):
         self.pos = [x for x in pos]
         self.speed = speed
-        self.rect = pygame.Rect(-100, -100, 8, 8)
+        self.rect = pygame.Rect(-100, -100, 12, 12)
         self.rect.center = self.pos
         self.sprite = tileset['shuriken1']
+        self.OFFSET_X = 2
+        self.OFFSET_Y = 2
+        self.sprite_pos = ( self.rect.left - self.OFFSET_X, self.rect.top - self.OFFSET_Y )
         self.state = 'inactive'
         self.anim_timer = 0
 
@@ -56,6 +59,7 @@ class Shuriken:
             
         for i in range(2): self.pos[i] += self.speed[i]
         self.rect.center = (self.pos[0], self.pos[1])
+        self.sprite_pos = ( self.rect.left - self.OFFSET_X, self.rect.top - self.OFFSET_Y )
 
     def collide(self, target):
         if type(target) == player.Player:

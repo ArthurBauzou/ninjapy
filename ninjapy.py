@@ -301,7 +301,7 @@ while True:
             screen.blit(tiles, obj.sprite_pos, obj.sprite)
 
         for shuriken in game.shuriken_list:
-            screen.blit(tiles, shuriken.rect, shuriken.sprite)
+            screen.blit(tiles, shuriken.sprite_pos, shuriken.sprite)
 
     ## DRAWING DEBUG INFO
         # SHOW HITBOXES
