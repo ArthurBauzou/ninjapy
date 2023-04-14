@@ -97,7 +97,7 @@ menu_confirm.set_volume(0.4)
 menu_title_art = pygame.image.load('assets/title_back.png').convert_alpha()
 menu_ogre = pygame.image.load('assets/title_ogre.png').convert_alpha()
 menu_texts = pygame.image.load('assets/title_texts.png').convert()
-menu_contols = pygame.image.load('assets/instructions.png').convert_alpha()
+menu_contols = pygame.image.load('assets/controls.png').convert_alpha()
 tiles = pygame.image.load('assets/tiles.png').convert()
 game_over_splash = pygame.image.load('assets/game_over.png').convert()
 
