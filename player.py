@@ -172,9 +172,3 @@ class Player:
         self.hurt_timer = HURT_COOLDOWN
         pygame.event.post(pygame.event.Event(SCREENSHAKE))
         pygame.mixer.Sound.play(hurt_sound)
-
-    # def reset(self, pos):
-    #     self.pos = [x for x in pos]
-    #     self.speed = [0,0]
-    #     self.ammo = 5
-    #     self.health = 3
