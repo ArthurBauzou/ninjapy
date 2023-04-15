@@ -13,6 +13,9 @@ class Bamboo:
         self.sprite_pos = ( self.rect.left - self.OFFSET_X, self.rect.top - self.OFFSET_Y )
         self.solid = True
 
+    def bristle(self):
+        pass
+
 class Plant:
     def __init__(self, pos):
         self.rect = pygame.Rect(0, 0, 32, 24)

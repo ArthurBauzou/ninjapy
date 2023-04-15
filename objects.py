@@ -9,8 +9,8 @@ import structures
 import player
 
 mixer.init()
-catch_sound = pygame.mixer.Sound("assets/sounds/bling.wav")
-pickup_sound = pygame.mixer.Sound("assets/sounds/step.wav")
+catch_sound = pygame.mixer.Sound("assets/sounds2/AnyConv.com__bling.ogg")
+pickup_sound = pygame.mixer.Sound("assets/sounds2/AnyConv.com__step.ogg")
 catch_sound.set_volume(0.4)
 pickup_sound.set_volume(0.3)
 
@@ -22,9 +22,12 @@ class Shuriken:
     def __init__(self, pos, speed):
         self.pos = [x for x in pos]
         self.speed = speed
-        self.rect = pygame.Rect(-100, -100, 8, 8)
+        self.rect = pygame.Rect(-100, -100, 12, 12)
         self.rect.center = self.pos
         self.sprite = tileset['shuriken1']
+        self.OFFSET_X = 2
+        self.OFFSET_Y = 2
+        self.sprite_pos = ( self.rect.left - self.OFFSET_X, self.rect.top - self.OFFSET_Y )
         self.state = 'inactive'
         self.anim_timer = 0
 
@@ -42,10 +45,8 @@ class Shuriken:
         ANIM_TIME = 4
         if self.anim_timer == 0 :
             self.anim_timer = ANIM_TIME
-            if self.sprite == tileset['shuriken1'] :
-                self.sprite = tileset['shuriken2']
-            else :
-                self.sprite = tileset['shuriken1']
+            if self.sprite == tileset['shuriken1']: self.sprite = tileset['shuriken2']
+            else: self.sprite = tileset['shuriken1']
         else:
             self.anim_timer -= 1
 
@@ -56,6 +57,7 @@ class Shuriken:
             
         for i in range(2): self.pos[i] += self.speed[i]
         self.rect.center = (self.pos[0], self.pos[1])
+        self.sprite_pos = ( self.rect.left - self.OFFSET_X, self.rect.top - self.OFFSET_Y )
 
     def collide(self, target):
         if type(target) == player.Player:
@@ -67,8 +69,8 @@ class Shuriken:
                 if target.ammo < 5 : target.ammo += 1
 
             if target.state == 'normal' :
+                target.damage([x/3 for x in self.speed])
                 self.bounce(target)
-                target.damage()
 
         if type(target) == ennemies.Ogre and target.state != 'hurting':
             target.damage(self.speed)
@@ -93,7 +95,7 @@ class Shuriken:
 class Pickup:
     def __init__(self, pos, style):
         self.pos = [x for x in pos]
-        self.rect = pygame.Rect(-100, -100, 8, 8)
+        self.rect = pygame.Rect(-100, -100, 16, 16)
         self.rect.center = self.pos
         self.style = style
         if self.style == 'shuriken':
