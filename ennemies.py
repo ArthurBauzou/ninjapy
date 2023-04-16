@@ -27,6 +27,8 @@ def get_target_direction(self_rect:pygame.Rect,target_rect:pygame.Rect):
 
 SCORE = pygame.USEREVENT + 2
 
+## KAPPA
+
 class Kappa:
     def __init__(self, pos):
         self.pos = [x for x in pos]
@@ -88,7 +90,6 @@ class Kappa:
         pygame.mixer.Sound.play(kappa_hit_sound)
         self.sprite = [x for x in self.sprite]
         pygame.event.post(pygame.event.Event(SCORE,{'value':1, 'style': 'score'}))
-        # pygame.mixer.Sound.play(death_sound)
 
     def warp(self):
         if self.rect.center[0] > GAME_WIDTH: self.pos[0] = 0
@@ -103,6 +104,9 @@ class Kappa:
         self.speed = [x*2 for x in dir]
         self.sprite = tileset['kappa_flex']
         pygame.mixer.Sound.play(kappa_attack_sound)
+
+
+## OGRE ##
 
 class Ogre:
     def __init__(self, pos):

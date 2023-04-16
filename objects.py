@@ -78,7 +78,7 @@ class Shuriken:
 
         if type(target) == ennemies.Kappa and target.state != 'dying':
             target.kill()
-            if random.choice(range(8)) == 0 :
+            if random.choice(range(5)) == 0 :
                 pygame.event.post(pygame.event.Event(ITEM_DROP,{'pos': target.pos, 'style': 'rice'}))
             self.bounce(target)
 

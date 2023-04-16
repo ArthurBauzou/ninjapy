@@ -135,7 +135,7 @@ async def main() :
     ## Generating menu
     is_in_menu = True
     is_in_game_over = False
-    main_menu = menu.Menu(False)
+    main_menu = menu.Menu(True)
 
     ## Launch Music
     main_menu.play_music(menu_music)
