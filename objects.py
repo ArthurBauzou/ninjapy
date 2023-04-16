@@ -14,7 +14,7 @@ pickup_sound = pygame.mixer.Sound("assets/sounds2/AnyConv.com__step.ogg")
 catch_sound.set_volume(0.4)
 pickup_sound.set_volume(0.3)
 
-SHURIKEN_DROP = pygame.USEREVENT + 1
+ITEM_DROP = pygame.USEREVENT + 1
 SCORE = pygame.USEREVENT + 2
 
 
@@ -76,6 +76,12 @@ class Shuriken:
             target.damage(self.speed)
             self.bounce(target)
 
+        if type(target) == ennemies.Kappa and target.state != 'dying':
+            target.kill()
+            if random.choice(range(8)) == 0 :
+                pygame.event.post(pygame.event.Event(ITEM_DROP,{'pos': target.pos, 'style': 'rice'}))
+            self.bounce(target)
+
         if type(target) == structures.Shrine:
             self.bounce(target)
 
@@ -89,7 +95,7 @@ class Shuriken:
         self.speed[1] = BOUNCE_Y_SPEED
 
     def become_pickup(self):
-        pygame.event.post(pygame.event.Event(SHURIKEN_DROP,{'pos': self.pos, 'style': 'shuriken'}))
+        pygame.event.post(pygame.event.Event(ITEM_DROP,{'pos': self.pos, 'style': 'shuriken'}))
         self.state = 'removed'
 
 class Pickup:
@@ -100,6 +106,8 @@ class Pickup:
         self.style = style
         if self.style == 'shuriken':
             self.sprite = random.choice([tileset['shuriken_sol_1'],tileset['shuriken_sol_2']])
+        if self.style == 'rice':
+            self.sprite = tileset['rice_nice']
         self.solid = False
         self.sprite_pos = self.pos
         self.removable = False
@@ -108,6 +116,9 @@ class Pickup:
         if self.style == 'shuriken':
             pygame.mixer.Sound.play(pickup_sound)
             if hero.ammo < 5 : hero.ammo += 1
+        if self.style == 'rice':
+            pygame.mixer.Sound.play(pickup_sound)
+            if hero.health < 4 : hero.health += 1
         self.removable = True
 
 class OgreSlam:

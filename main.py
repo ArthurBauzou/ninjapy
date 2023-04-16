@@ -52,7 +52,9 @@ class Game:
         #actors
         self.spawn_locations = [(96,112),(380,212)]
         self.object_list.append(ennemies.Ogre(random.choice(self.spawn_locations)))
-        self.spawn_timer = 250 + random.choice(range(500))
+        self.object_list.append(ennemies.Kappa(random.choice(self.spawn_locations)))
+        self.kappa_spawn_timer = 200 + random.choice(range(500))
+        self.ogre_spawn_timer = 300 + random.choice(range(500))
         self.object_list.append(player)
 
     def spawn_bamboos(self):
@@ -97,7 +99,7 @@ async def main() :
     game_over_bg.set_alpha(1)
 
     ## SOUNDS
-    menu_confirm = pygame.mixer.Sound("assets/sounds2/dash2.ogg")
+    menu_confirm = pygame.mixer.Sound("assets/sounds2/letsgo.ogg")
     menu_confirm.set_volume(0.4)
 
     ## MUSICS
@@ -133,7 +135,7 @@ async def main() :
     ## Generating menu
     is_in_menu = True
     is_in_game_over = False
-    main_menu = menu.Menu(True)
+    main_menu = menu.Menu(False)
 
     ## Launch Music
     main_menu.play_music(menu_music)
@@ -262,12 +264,33 @@ async def main() :
                 ogre.update()
                 if ogre.state == 'removed' : game.object_list.remove(ogre)
 
-            # spawn
-            if len(ogres) == 0 : game.spawn_timer -= 10
-            else : game.spawn_timer -= 1
-            if len(ogres) < 5 and game.spawn_timer < 0 :
+            # spawn Ogres
+            if len(ogres) == 0 : game.ogre_spawn_timer -= 10
+            else : game.ogre_spawn_timer -= 1
+            if len(ogres) < 5 and game.ogre_spawn_timer < 0 :
                 game.object_list.append(ennemies.Ogre(random.choice(game.spawn_locations)))
-                game.spawn_timer = 750 - (game.score*3) + random.choice(range(500))
+                game.ogre_spawn_timer = 1000 - (game.score*2) + random.choice(range(500))
+
+            # kappas
+            kappas = [obj for obj in game.object_list if type(obj) == ennemies.Kappa]
+            for kappa in kappas:
+
+                if kappa.attack_rect.colliderect(hero.rect) and kappa.state == 'normal': 
+                    kappa.attack(hero)
+                if kappa.rect.colliderect(hero.rect) and kappa.state == 'attacking':
+                    hero.damage(kappa.speed)
+                    kappa.speed = [0,0]
+
+                kappa.update()
+                kappa.warp()
+                if kappa.state == 'removed' : game.object_list.remove(kappa)
+
+            # spawn Kappas
+            if len(kappas) == 0 : game.kappa_spawn_timer -= 10
+            else : game.kappa_spawn_timer -= 1
+            if len(kappas) < 6 and game.kappa_spawn_timer < 0 :
+                game.object_list.append(ennemies.Kappa(random.choice(game.spawn_locations)))
+                game.kappa_spawn_timer = 750 - (game.score*3) + random.choice(range(500))
 
             #pickups
             for pickup in [obj for obj in game.object_list if type(obj) == objects.Pickup]:
