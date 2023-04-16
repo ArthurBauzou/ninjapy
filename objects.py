@@ -9,7 +9,7 @@ import structures
 import player
 
 mixer.init()
-catch_sound = pygame.mixer.Sound("assets/sounds2/AnyConv.com__bling.ogg")
+catch_sound = pygame.mixer.Sound("assets/sounds2/shuriken_grab.ogg")
 pickup_sound = pygame.mixer.Sound("assets/sounds2/AnyConv.com__step.ogg")
 catch_sound.set_volume(0.4)
 pickup_sound.set_volume(0.3)

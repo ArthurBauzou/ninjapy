@@ -49,12 +49,13 @@ class Game:
         self.spawn_bamboos()
         self.spawn_plants(28)
         self.object_list.append(struct.Shrine((240,160)))
+
         #actors
         self.spawn_locations = [(96,112),(380,212)]
-        self.object_list.append(ennemies.Ogre(random.choice(self.spawn_locations)))
+        # self.object_list.append(ennemies.Ogre(random.choice(self.spawn_locations)))
         self.object_list.append(ennemies.Kappa(random.choice(self.spawn_locations)))
-        self.kappa_spawn_timer = 200 + random.choice(range(500))
-        self.ogre_spawn_timer = 300 + random.choice(range(500))
+        self.kappa_spawn_timer = 200 + random.choice(range(400))
+        self.ogre_spawn_timer = 1500 + random.choice(range(500))
         self.object_list.append(player)
 
     def spawn_bamboos(self):
@@ -70,6 +71,9 @@ class Game:
         ]
         for pos in random_plant_positions:
             self.object_list.append(struct.Plant(pos))
+
+    def spawn_enemy(self):
+        pass
 
 
 async def main() :
@@ -104,7 +108,7 @@ async def main() :
 
     ## MUSICS
     menu_music = 'assets/sounds2/AnyConv.com__menu_music.ogg'
-    game_music = 'assets/sounds2/I_Want_To_Be_Neenja.ogg'
+    game_music = 'assets/sounds2/I_Want_To_Be_Neenja_2.ogg'
 
     ## GRAPHICS
     menu_title_art = pygame.image.load('assets/title_back.png').convert_alpha()
@@ -120,6 +124,8 @@ async def main() :
     multi_font = pygame.font.Font('assets/kloudt.regular.otf', 16)
     score_back_rect = pygame.Rect(0,0,96,32)
     score_back_rect.topright = (480,0)
+    multi_timer_rect = pygame.Rect(390,20,32,4)
+
     # health
     health_rect = pygame.Rect(0,0,80,16)
     flower_rects = [ pygame.Rect(16 + x*16, 0, 16, 16) for x in range(4) ]
@@ -265,7 +271,7 @@ async def main() :
                 if ogre.state == 'removed' : game.object_list.remove(ogre)
 
             # spawn Ogres
-            if len(ogres) == 0 : game.ogre_spawn_timer -= 10
+            if len(ogres) == 0 : game.ogre_spawn_timer -= 2
             else : game.ogre_spawn_timer -= 1
             if len(ogres) < 5 and game.ogre_spawn_timer < 0 :
                 game.object_list.append(ennemies.Ogre(random.choice(game.spawn_locations)))
@@ -279,7 +285,8 @@ async def main() :
                     kappa.attack(hero)
                 if kappa.rect.colliderect(hero.rect) and kappa.state == 'attacking':
                     hero.damage(kappa.speed)
-                    kappa.speed = [0,0]
+                    kappa.chill()
+                    kappa.max_speed -= 0.05
 
                 kappa.update()
                 kappa.warp()
@@ -366,6 +373,11 @@ async def main() :
                 multi_message_rect = multi_message.get_rect()
                 multi_message_rect.topleft = (400,4)
                 screen.blit(multi_message, multi_message_rect)
+                # multi timer
+                if game.multi_reset_timer > 0 :
+                    multi_timer_rect.width = game.multi_reset_timer * 32/MULTI_RESET
+                pygame.draw.rect(screen, 'orangered3', multi_timer_rect)
+                
             #health
             screen.blit(tiles, health_rect, tileset['branch'])
             for n in range(hero.health):
