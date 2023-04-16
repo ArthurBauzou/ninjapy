@@ -51,7 +51,7 @@ class Ogre:
         self.sprite_pos = ( self.rect.left - self.OFFSET_X, self.rect.top - self.OFFSET_Y )
         self.solid = True
         self.life = 3
-        self.MAX_SPEED = 0.4 + random.choice(range(3))/10
+        self.MAX_SPEED = 0.4 + random.choice(range(6))/10
 
         # behaviour
         self.charge_rect = pygame.Rect(-100, -100, 108, 108)
@@ -106,7 +106,7 @@ class Ogre:
     def charge(self):
         self.state = 'charging'
         self.sprite = tileset['ogre_charge']
-        self.max_speed = 1.2
+        self.max_speed = 1.2 + random.choice(range(6))/10
         self.charge_timer = 90
 
     def slam(self, target):

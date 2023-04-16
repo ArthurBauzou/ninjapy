@@ -30,23 +30,30 @@ def get_solid_objects(list) -> list:
 
 
 class Game:
-    def __init__(self, player):
+    def __init__(self, player, tiles):
         #score
         self.score = 0
         self.multi = 1
         self.multi_reset_timer = 0
         #ogres
-        self.spawn_locations = [(96,112),(380,212)]
         self.object_list = []
-        self.object_list.append(ennemies.Ogre(random.choice(self.spawn_locations)))
-        self.spawn_timer = 250 + random.choice(range(500))
+        self.effect_list = []
+        self.shuriken_list = []
+        #background
+        self.background = pygame.Surface((GAME_WIDTH, GAME_HEIGHT))
+        for x in range(15):
+            for y in range(10):
+                style = random.choice(['grass1','grass2'])
+                self.background.blit(tiles, (32*x,32*y), tileset[style])
         #decor
         self.spawn_bamboos()
         self.spawn_plants(28)
         self.object_list.append(struct.Shrine((240,160)))
-        #heros
+        #actors
+        self.spawn_locations = [(96,112),(380,212)]
+        self.object_list.append(ennemies.Ogre(random.choice(self.spawn_locations)))
+        self.spawn_timer = 250 + random.choice(range(500))
         self.object_list.append(player)
-        self.shuriken_list = []
 
     def spawn_bamboos(self):
         bamboo_positions = [(64,64),(84,84),(416,264),(396,244)]
@@ -79,6 +86,8 @@ async def main() :
     screen_position = [0,0]
     game_frames = 0
     screenshake_timer = 0
+    screenshake_frequency = 2
+    screenshake_intensity = 4
 
     ## MENU
     menu_background = pygame.Surface((GAME_WIDTH, GAME_HEIGHT))
@@ -88,12 +97,12 @@ async def main() :
     game_over_bg.set_alpha(1)
 
     ## SOUNDS
-    menu_confirm = pygame.mixer.Sound("assets/sounds2/AnyConv.com__dash.ogg")
+    menu_confirm = pygame.mixer.Sound("assets/sounds2/dash2.ogg")
     menu_confirm.set_volume(0.4)
 
     ## MUSICS
     menu_music = 'assets/sounds2/AnyConv.com__menu_music.ogg'
-    game_music = 'assets/sounds2/AnyConv.com__game_music.ogg'
+    game_music = 'assets/sounds2/I_Want_To_Be_Neenja.ogg'
 
     ## GRAPHICS
     menu_title_art = pygame.image.load('assets/title_back.png').convert_alpha()
@@ -116,28 +125,16 @@ async def main() :
     belt_rect = pygame.Rect(0,16,80,16)
     ammo_rects = [ pygame.Rect(12 + x*11, 16, 16, 16) for x in range(5) ]
 
-    ## SCREENSHAKE
-    screenshake_frequency = 2
-    screenshake_intensity = 4
-    SCREENSHAKE = pygame.USEREVENT + 0
+    ## SIGNALS
+    PLAYER_HURT = pygame.USEREVENT + 0
     CREATE_PICKUP = pygame.USEREVENT + 1
     SCORE = pygame.USEREVENT + 2
 
-
-    #––––––––––––––––––––––#
-    ### GENERATING LEVEL ###
-    #––––––––––––––––––––––#
-
-    ## BACKGROUND
-    background = pygame.Surface((GAME_WIDTH, GAME_HEIGHT))
-    for x in range(15):
-        for y in range(10):
-            style = random.choice(['grass1','grass2'])
-            background.blit(tiles, (32*x,32*y), tileset[style])
-
+    ## Generating menu
     is_in_menu = True
     is_in_game_over = False
-    main_menu = menu.Menu(False)
+    main_menu = menu.Menu(True)
+
     ## Launch Music
     main_menu.play_music(menu_music)
 
@@ -162,7 +159,7 @@ async def main() :
                             main_menu.play_music(game_music)
                             pygame.mixer.Sound.play(menu_confirm)
                             hero = player.Player([240,180])
-                            game = Game(hero)
+                            game = Game(hero, tiles)
                             is_in_menu = False
                         if main_menu.state == 'music':
                             main_menu.switch_music_on()
@@ -198,13 +195,11 @@ async def main() :
                     exit()
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_r:
-                        del game, hero
+                        # del game, hero
                         hero = player.Player([240,180])
-                        game = Game(hero)
+                        game = Game(hero, tiles)
                         is_in_game_over = False
                     if event.key == pygame.K_m:
-                        # music_on = main_menu.music_on
-                        # # del main_menu
                         main_menu = menu.Menu(main_menu.music_on)
                         main_menu.play_music(menu_music)
                         is_in_game_over = False
@@ -219,8 +214,10 @@ async def main() :
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     exit()
-                if event.type == SCREENSHAKE:
+                if event.type == PLAYER_HURT:
                     screenshake_timer = 8
+                    game.effect_list.append(objects.Petal(hero.rect.center))
+                    game.effect_list.append(objects.Petal(hero.rect.center, True))
                 if event.type == SCORE:
                     if event.style == 'multi':
                         game.multi += event.value
@@ -259,6 +256,7 @@ async def main() :
                 if ogre.state == 'charging' and ogre.rect.colliderect(hero.rect) \
                 or ogre.charge_timer == 1:
                     ogre.slam(hero)
+                    game.effect_list.append(objects.OgreSlam(ogre.rect.midbottom))
                 if ogre.state not in ['hurting', 'slamming'] : ogre.move(hero)
 
                 ogre.update()
@@ -269,7 +267,7 @@ async def main() :
             else : game.spawn_timer -= 1
             if len(ogres) < 5 and game.spawn_timer < 0 :
                 game.object_list.append(ennemies.Ogre(random.choice(game.spawn_locations)))
-                game.spawn_timer = 750 - (game.score*5) + random.choice(range(500))
+                game.spawn_timer = 750 - (game.score*3) + random.choice(range(500))
 
             #pickups
             for pickup in [obj for obj in game.object_list if type(obj) == objects.Pickup]:
@@ -288,9 +286,19 @@ async def main() :
                 shuriken.update()
                 if shuriken.state == 'removed' : game.shuriken_list.remove(shuriken)
 
+            # effects
+            for effect in game.effect_list :
+                effect.update()
+                if effect.stay_on_background : game.background.blit(tiles, effect.rect, effect.sprite)
+                if effect.remove : game.effect_list.remove(effect)
+
 
         ## DRAWING BACKGROUND
-            screen.blit(background, (0,0))
+            screen.blit(game.background, (0,0))
+
+        # effects on bottom
+            for effect in game.effect_list:
+                if effect.on_bottom : screen.blit(tiles, effect.rect, effect.sprite)
 
         ## DRAWING ENTITIES
             game.object_list.sort(key=get_z)
@@ -299,6 +307,10 @@ async def main() :
 
             for shuriken in game.shuriken_list:
                 screen.blit(tiles, shuriken.sprite_pos, shuriken.sprite)
+
+            # effects on bottom
+            for effect in game.effect_list:
+                if not effect.on_bottom : screen.blit(tiles, effect.rect, effect.sprite)
 
         ## DRAWING DEBUG INFO
             ## SHOW HITBOXES

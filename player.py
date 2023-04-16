@@ -8,11 +8,11 @@ from conf import GAME_WIDTH, GAME_HEIGHT
 
 ## SOUNDS
 mixer.init()
-dash_sound = pygame.mixer.Sound("assets/sounds2/dash.ogg")
-shoot_sound = pygame.mixer.Sound("assets/sounds2/AnyConv.com__shoot.ogg")
+dash_sound = pygame.mixer.Sound("assets/sounds2/dash2.ogg")
+shoot_sound = pygame.mixer.Sound("assets/sounds2/shuriken.ogg")
 hurt_sound = pygame.mixer.Sound("assets/sounds2/AnyConv.com__hurt.ogg")
 bounce_sound = pygame.mixer.Sound("assets/sounds2/AnyConv.com__bounce.ogg")
-dash_sound.set_volume(0.15)
+dash_sound.set_volume(0.2)
 shoot_sound.set_volume(0.2)
 hurt_sound.set_volume(0.8)
 bounce_sound.set_volume(0.2)
@@ -29,7 +29,7 @@ global_directions = {
     pygame.K_UP: (0,-1),
 }
 
-SCREENSHAKE = pygame.USEREVENT + 0
+PLAYER_HURT = pygame.USEREVENT + 0
 
 ## CLASS
 class Player:
@@ -143,15 +143,15 @@ class Player:
                     pygame.mixer.Sound.play(bounce_sound)
                     self.speed[0] = ACCELBOUNCE
                     self.pos[0] += BOUNCE
-                if isNear(self.rect.right, obj.left, 3): 
+                elif isNear(self.rect.right, obj.left, 3): 
                     pygame.mixer.Sound.play(bounce_sound)
                     self.speed[0] = - ACCELBOUNCE
                     self.pos[0] -= BOUNCE
-                if isNear(self.rect.bottom, obj.top, 3): 
+                elif isNear(self.rect.bottom, obj.top, 3): 
                     pygame.mixer.Sound.play(bounce_sound)
                     self.speed[1] = -ACCELBOUNCE
                     self.pos[1] -= BOUNCE
-                if isNear(self.rect.top, obj.bottom, 3): 
+                elif isNear(self.rect.top, obj.bottom, 3): 
                     pygame.mixer.Sound.play(bounce_sound)
                     self.speed[1] = ACCELBOUNCE
                     self.pos[1] += BOUNCE
@@ -160,9 +160,9 @@ class Player:
         for obj in list:
             if self.rect.colliderect(obj):
                 if isNear(self.rect.left, obj.right, 3) and self.speed[0] < 0: self.speed[0] = 0
-                if isNear(self.rect.right, obj.left, 3) and self.speed[0] > 0: self.speed[0] = 0 
-                if isNear(self.rect.bottom, obj.top, 3) and self.speed[1] > 0: self.speed[1] = 0 
-                if isNear(self.rect.top, obj.bottom, 3) and self.speed[1] < 0: self.speed[1] = 0 
+                elif isNear(self.rect.right, obj.left, 3) and self.speed[0] > 0: self.speed[0] = 0 
+                elif isNear(self.rect.bottom, obj.top, 3) and self.speed[1] > 0: self.speed[1] = 0 
+                elif isNear(self.rect.top, obj.bottom, 3) and self.speed[1] < 0: self.speed[1] = 0 
 
     def damage(self, direction):
         HURT_COOLDOWN = 24
@@ -170,5 +170,5 @@ class Player:
         self.speed = [x for x in direction]
         self.sprite = tileset['ninja_hurt']
         self.hurt_timer = HURT_COOLDOWN
-        pygame.event.post(pygame.event.Event(SCREENSHAKE))
+        pygame.event.post(pygame.event.Event(PLAYER_HURT))
         pygame.mixer.Sound.play(hurt_sound)

@@ -114,5 +114,56 @@ class OgreSlam:
     def __init__(self, pos):
         self.pos = [x for x in pos]
         self.rect = pygame.Rect(-100, -100, 32, 32)
+        self.rect.midtop = self.pos
+        self.sprite = tileset['slam1']
+        self.timer = 16
+        self.remove = False
+        self.on_bottom = True
+        self.stay_on_background = False
+
+    def update(self):
+        self.timer -= 1
+        if self.timer == 8 : self.sprite = tileset['slam2']
+        if self.timer <= 0 : self.remove = True
+
+class Petal:
+    def __init__(self, pos, go_left:bool = False):
+        self.pos = [x for x in pos]
+        self.rect = pygame.Rect(-100, -100, 8, 8)
         self.rect.center = self.pos
-        self.sprite = tileset('slam1')
+        self.frame_list = ['petal1', 'petal2', 'petal3']
+        self.frame = random.choice(range(3))
+        self.sprite = tileset[self.frame_list[self.frame]]
+        self.timer = 32
+        self.remove = False
+        self.on_bottom = False
+        self.stay_on_background = False
+        self.falling = False
+        self.speed = [
+            0.5 + random.choice(range(8))/10,
+            -1.5 - random.choice(range(8))/10
+        ]
+        if go_left : self.speed[0] = -self.speed[0]
+    
+    def update(self):
+        self.timer -= 1
+        #rise and fall
+        if self.speed[1] > 0 : self.falling = True
+        if not self.falling : self.speed[1] += 0.1
+        else : 
+            self.speed[0] = 0
+            self.speed[1] += 0.01
+        #animate 
+        if self.timer %8==0 : self.animate()
+        #update pos
+        self.pos = [self.pos[i] + self.speed[i] for i in (0,1)]
+        self.rect.center = self.pos
+        #end of effect
+        if self.timer == 0: 
+            self.stay_on_background = True
+            self.remove = True
+        
+    def animate(self):
+        if self.frame < len(self.frame_list) - 1 : self.frame += 1
+        else : self.frame = 0
+        self.sprite = tileset[self.frame_list[self.frame]]
