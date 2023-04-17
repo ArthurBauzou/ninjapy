@@ -9,9 +9,9 @@ import structures
 import player
 
 mixer.init()
-catch_sound = pygame.mixer.Sound("assets/sounds2/shuriken_grab.ogg")
+catch_sound = pygame.mixer.Sound("assets/sounds2/shuriken_grab_2.ogg")
 pickup_sound = pygame.mixer.Sound("assets/sounds2/AnyConv.com__step.ogg")
-catch_sound.set_volume(0.4)
+catch_sound.set_volume(0.35)
 pickup_sound.set_volume(0.3)
 
 ITEM_DROP = pygame.USEREVENT + 1
@@ -109,7 +109,7 @@ class Pickup:
         if self.style == 'rice':
             self.sprite = tileset['rice_nice']
         self.solid = False
-        self.sprite_pos = self.pos
+        self.sprite_pos = [x-8 for x in self.pos]
         self.removable = False
 
     def get_pickedup(self, hero):
@@ -120,6 +120,24 @@ class Pickup:
             pygame.mixer.Sound.play(pickup_sound)
             if hero.health < 4 : hero.health += 1
         self.removable = True
+
+    def get_out_dead_zone(self, dead_zone):
+        get_out = False
+        for dz in dead_zone :
+            if self.rect.colliderect(dz.dz_rect): get_out = True
+        if self.pos[0] < 8 \
+        or self.pos[0] > GAME_WIDTH - 8 \
+        or self.pos[1] < 8 \
+        or self.pos[1] > GAME_HEIGHT - 8 :
+            get_out = True
+
+        if get_out :
+            print('get out of dead zone')
+            if self.pos[0] < GAME_WIDTH/2 : self.pos = [x+3 for x in self.pos]
+            else : self.pos = [x-3 for x in self.pos]
+            self.rect.center = self.pos
+            self.sprite_pos = [x-8 for x in self.pos]
+
 
 class OgreSlam:
     def __init__(self, pos):

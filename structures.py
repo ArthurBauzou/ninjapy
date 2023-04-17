@@ -6,7 +6,9 @@ class Bamboo:
 
     def __init__(self, pos):
         self.rect = pygame.Rect(0, 0, 58, 32)
+        self.dz_rect = pygame.Rect(0, 0, 64, 64)
         self.rect.center = (pos[0], pos[1])
+        self.dz_rect.center = (pos[0], pos[1])
         self.sprite = tileset['bamboo']
         self.OFFSET_X = 3
         self.OFFSET_Y = 24

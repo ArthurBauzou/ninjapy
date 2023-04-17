@@ -7,12 +7,12 @@ mixer.init()
 ogre_hit_sound = pygame.mixer.Sound("assets/sounds2/ogre_ugh1.ogg")
 kappa_hit_sound = pygame.mixer.Sound("assets/sounds2/kappa_death.ogg")
 kappa_attack_sound = pygame.mixer.Sound("assets/sounds2/kappa_attack2.ogg")
-death_sound = pygame.mixer.Sound("assets/sounds2/ogre_death.ogg")
+ogre_death_sound = pygame.mixer.Sound("assets/sounds2/ogre_death.ogg")
 ogre_slam = pygame.mixer.Sound("assets/sounds2/AnyConv.com__slam.ogg")
 ogre_slam.set_volume(0.2)
 kappa_hit_sound.set_volume(0.4)
 ogre_hit_sound.set_volume(0.3)
-death_sound.set_volume(0.4)
+ogre_death_sound.set_volume(0.45)
 kappa_attack_sound.set_volume(0.4)
 
 # cette fonction renvoie un vecteur type (a,b) ou a et b ne peuvent avoir que les valeurs -1, 0 ou 1.
@@ -97,8 +97,8 @@ class Kappa:
         self.sprite = tileset['kappa_hit']
         pygame.mixer.Sound.play(kappa_hit_sound)
         self.sprite = [x for x in self.sprite]
-        pygame.event.post(pygame.event.Event(SCORE,{'value':1, 'style': 'score'}))
         pygame.event.post(pygame.event.Event(SCORE,{'value':0, 'style': 'multi'}))
+        pygame.event.post(pygame.event.Event(SCORE,{'value':2, 'style': 'score'}))
 
     def warp(self):
         if self.rect.center[0] > GAME_WIDTH: self.pos[0] = 0
@@ -213,7 +213,7 @@ class Ogre:
             self.hurt_timer = 42
         else :
             pygame.event.post(pygame.event.Event(SCORE,{'value': 1, 'style': 'multi'}))
-            pygame.mixer.Sound.play(death_sound)
+            pygame.mixer.Sound.play(ogre_death_sound)
             self.wiggle = 4
             self.speed = [0,0]
             self.sprite = [x for x in self.sprite]

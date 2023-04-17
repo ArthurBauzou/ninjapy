@@ -105,7 +105,7 @@ class Player:
 
     def dash(self, key):
         DASH_DURATION = 24
-        DASH_COOLDOWN = 64 
+        DASH_COOLDOWN = 48 
         if self.dash_cooldown_timer == 0 :
             self.dash_cooldown_timer = DASH_COOLDOWN
             self.dash_timer = DASH_DURATION

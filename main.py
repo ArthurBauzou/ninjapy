@@ -303,6 +303,9 @@ async def main() :
             for pickup in [obj for obj in game.object_list if type(obj) == objects.Pickup]:
                 if pickup.rect.colliderect(hero.rect):
                     pickup.get_pickedup(hero)
+                dead_zone = [obj for obj in game.object_list if type(obj) == struct.Bamboo]
+                pickup.get_out_dead_zone(dead_zone)
+
                 if pickup.removable : game.object_list.remove(pickup)
 
             # shuriken
