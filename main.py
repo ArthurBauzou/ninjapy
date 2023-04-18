@@ -1,4 +1,4 @@
-import pygame, random
+import pygame
 import asyncio 
 from pygame import mixer
 from sys import exit
@@ -25,7 +25,7 @@ def get_z(obj):
 def isNear(a,b,sensibility):
     return a-b >= -sensibility and a-b <= sensibility
 
-def get_solid_objects(list, minus_bamboos = False) -> list:
+def get_solid_objects(list, minus_bamboos = False) -> list[pygame.Rect]:
     if minus_bamboos : solid_objects = [obj.rect for obj in list if obj.solid and type(obj)!=struct.Bamboo]
     else : solid_objects = [obj.rect for obj in list if obj.solid]
     return solid_objects
@@ -200,9 +200,12 @@ async def main() :
 
         ## ENTITIES BEHAVIOUR
 
+            sol_obj = get_solid_objects(game.object_list)
+            monster_collision_list = get_solid_objects(game.object_list, True)
+            ogre_targets = [obj for obj in game.object_list if type(obj) in [player.Player, ennemies.Kappa]]
+
             # player
             if hero.health == 0 : is_in_game_over = True
-            sol_obj = get_solid_objects(game.object_list)
             if hero.state == 'normal': hero.control_movement()
             if hero.state == 'dashing': hero.bounce(sol_obj)
             else : hero.collide(sol_obj)
@@ -212,8 +215,6 @@ async def main() :
             # objects
             game.kappa_count = 0
             game.ogre_count = 0
-            monster_collision_list = get_solid_objects(game.object_list, True)
-            ogre_targets = [obj for obj in game.object_list if type(obj) in [player.Player, ennemies.Kappa]]
 
             for o in game.object_list :
                 if type(o) == ennemies.Ogre:
@@ -266,8 +267,8 @@ async def main() :
                 if effect.remove : game.effect_list.remove(effect)
 
             # monster spawn
-            if game.kappa_count <= MAX_KAPPAS : game.spawn_kappa()
-            if game.ogre_count <= MAX_OGRES : game.spawn_ogre()
+            if game.kappa_count <= MAX_KAPPAS-1 : game.spawn_kappa()
+            if game.ogre_count <= MAX_OGRES-1 : game.spawn_ogre()
 
             #screenshake
             if screenshake_timer > 0:

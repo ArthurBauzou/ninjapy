@@ -30,7 +30,6 @@ class Game:
         level2 = [(80,80),(400,80),(80,256),(400,256)]
         level3 = [(80,80),(240,64),(400,80),(240,264)]
         self.spawn_bamboos(random.choice([level1, level2, level3]))
-        # self.spawn_bamboos([(80,80),(240,64),(400,80),(240,264)])
         self.bamboos = [obj for obj in self.object_list if type(obj) == struct.Bamboo]
         self.spawn_plants(28)
         self.spawn_shrine()

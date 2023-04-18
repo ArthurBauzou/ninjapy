@@ -88,6 +88,7 @@ class Kappa:
         self.sprite = tileset['kappa']
 
     def kill(self, from_hero = True):
+        self.solid = False
         self.timer = 48
         self.speed = [0,0]
         self.state = 'dying'
@@ -241,6 +242,7 @@ class Ogre:
             self.speed = [0,0]
             self.sprite = [x for x in self.sprite]
             self.hurt_timer = 64
+            self.solid = False
             self.destroy = True
 
     def collide(self, list):
