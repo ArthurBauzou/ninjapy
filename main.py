@@ -6,12 +6,13 @@ from sys import exit
 # ctypes.windll.user32.SetProcessDPIAware()
 
 from sprite_map import tileset
-from conf import GAME_HEIGHT, GAME_SCALE, GAME_SPEED, GAME_WIDTH, MULTI_RESET
+from conf import GAME_HEIGHT, GAME_SCALE, GAME_SPEED, GAME_WIDTH, MULTI_RESET, MAX_KAPPAS, MAX_OGRES
 import player as player
 import structures as struct
 import ennemies as ennemies
 import objects as objects
 import menu as menu
+import game as level
 
 
 #–––––––––––––––––––––#
@@ -27,53 +28,6 @@ def isNear(a,b,sensibility):
 def get_solid_objects(list) -> list:
     solid_objects = [obj.rect for obj in list if obj.solid]
     return solid_objects
-
-
-class Game:
-    def __init__(self, player, tiles):
-        #score
-        self.score = 0
-        self.multi = 1
-        self.multi_reset_timer = 0
-        #ogres
-        self.object_list = []
-        self.effect_list = []
-        self.shuriken_list = []
-        #background
-        self.background = pygame.Surface((GAME_WIDTH, GAME_HEIGHT))
-        for x in range(15):
-            for y in range(10):
-                style = random.choice(['grass1','grass2'])
-                self.background.blit(tiles, (32*x,32*y), tileset[style])
-        #decor
-        self.spawn_bamboos()
-        self.spawn_plants(28)
-        self.object_list.append(struct.Shrine((240,160)))
-
-        #actors
-        self.spawn_locations = [(96,112),(380,212)]
-        # self.object_list.append(ennemies.Ogre(random.choice(self.spawn_locations)))
-        self.object_list.append(ennemies.Kappa(random.choice(self.spawn_locations)))
-        self.kappa_spawn_timer = 200 + random.choice(range(400))
-        self.ogre_spawn_timer = 1500 + random.choice(range(500))
-        self.object_list.append(player)
-
-    def spawn_bamboos(self):
-        bamboo_positions = [(64,64),(84,84),(416,264),(396,244)]
-        for pos in (bamboo_positions):
-            bamboo = struct.Bamboo(pos)
-            self.object_list.append(bamboo)
-
-    def spawn_plants(self, number):
-        random_plant_positions = [
-            (random.choice(range(32,448,16)),random.choice(range(32,288,16)))
-            for i in range(number)
-        ]
-        for pos in random_plant_positions:
-            self.object_list.append(struct.Plant(pos))
-
-    def spawn_enemy(self):
-        pass
 
 
 async def main() :
@@ -167,7 +121,7 @@ async def main() :
                             main_menu.play_music(game_music)
                             pygame.mixer.Sound.play(menu_confirm)
                             hero = player.Player([240,180])
-                            game = Game(hero, tiles)
+                            game = level.Game(hero, tiles)
                             is_in_menu = False
                         if main_menu.state == 'music':
                             main_menu.switch_music_on()
@@ -205,7 +159,7 @@ async def main() :
                     if event.key == pygame.K_r:
                         # del game, hero
                         hero = player.Player([240,180])
-                        game = Game(hero, tiles)
+                        game = level.Game(hero, tiles)
                         is_in_game_over = False
                     if event.key == pygame.K_m:
                         main_menu = menu.Menu(main_menu.music_on)
@@ -255,59 +209,40 @@ async def main() :
             hero.warp()
             hero.update()
 
-            # ogres
-            ogres = [obj for obj in game.object_list if type(obj) == ennemies.Ogre]
-            for ogre in ogres:
+            # objects
+            game.kappa_count = 0
+            game.ogre_count = 0
+            for o in game.object_list :
+                if type(o) == ennemies.Ogre:
+                    ogre = o
+                    if ogre.charge_rect.colliderect(hero.rect) and ogre.state == 'normal': ogre.charge()
+                    if ogre.state == 'charging' and ogre.rect.colliderect(hero.rect) \
+                    or ogre.charge_timer == 1:
+                        ogre.slam(hero)
+                        game.effect_list.append(objects.OgreSlam(ogre.rect.midbottom))
+                    if ogre.state not in ['hurting', 'slamming'] : ogre.move(hero)
+                    ogre.update()
+                    if ogre.state == 'removed' : game.object_list.remove(o)
+                    game.ogre_count += 1
 
-                if ogre.charge_rect.colliderect(hero.rect) and ogre.state == 'normal': 
-                    ogre.charge()
-                if ogre.state == 'charging' and ogre.rect.colliderect(hero.rect) \
-                or ogre.charge_timer == 1:
-                    ogre.slam(hero)
-                    game.effect_list.append(objects.OgreSlam(ogre.rect.midbottom))
-                if ogre.state not in ['hurting', 'slamming'] : ogre.move(hero)
+                if type(o) == ennemies.Kappa :
+                    kappa = o
+                    if kappa.attack_rect.colliderect(hero.rect) and kappa.state == 'normal': kappa.attack(hero)
+                    if kappa.rect.colliderect(hero.rect) and kappa.state == 'attacking':
+                        hero.damage(kappa.speed)
+                        kappa.chill()
+                        kappa.max_speed -= 0.05
+                    kappa.update()
+                    kappa.warp()
+                    if kappa.state == 'removed' : game.object_list.remove(o)
+                    game.kappa_count += 1
 
-                ogre.update()
-                if ogre.state == 'removed' : game.object_list.remove(ogre)
-
-            # spawn Ogres
-            if len(ogres) == 0 : game.ogre_spawn_timer -= 2
-            else : game.ogre_spawn_timer -= 1
-            if len(ogres) < 5 and game.ogre_spawn_timer < 0 :
-                game.object_list.append(ennemies.Ogre(random.choice(game.spawn_locations)))
-                game.ogre_spawn_timer = 1000 - (game.score*2) + random.choice(range(500))
-
-            # kappas
-            kappas = [obj for obj in game.object_list if type(obj) == ennemies.Kappa]
-            for kappa in kappas:
-
-                if kappa.attack_rect.colliderect(hero.rect) and kappa.state == 'normal': 
-                    kappa.attack(hero)
-                if kappa.rect.colliderect(hero.rect) and kappa.state == 'attacking':
-                    hero.damage(kappa.speed)
-                    kappa.chill()
-                    kappa.max_speed -= 0.05
-
-                kappa.update()
-                kappa.warp()
-                if kappa.state == 'removed' : game.object_list.remove(kappa)
-
-            # spawn Kappas
-            if len(kappas) == 0 : game.kappa_spawn_timer -= 10
-            else : game.kappa_spawn_timer -= 1
-            if len(kappas) < 6 and game.kappa_spawn_timer < 0 :
-                game.object_list.append(ennemies.Kappa(random.choice(game.spawn_locations)))
-                game.kappa_spawn_timer = 750 - (game.score*3) + random.choice(range(500))
-
-            #pickups
-            for pickup in [obj for obj in game.object_list if type(obj) == objects.Pickup]:
-                if pickup.rect.colliderect(hero.rect):
-                    pickup.get_pickedup(hero)
-                dead_zone = [obj for obj in game.object_list if type(obj) == struct.Bamboo]
-                pickup.get_out_dead_zone(dead_zone)
-
-                if pickup.removable : game.object_list.remove(pickup)
-
+                if type(o) == objects.Pickup :
+                    pickup = o
+                    if pickup.rect.colliderect(hero.rect): pickup.get_pickedup(hero)
+                    pickup.get_out_dead_zone(game.dead_zone_list)
+                    if pickup.removable : game.object_list.remove(pickup)
+        
             # shuriken
             for shuriken in game.shuriken_list:
                 shuriken.activate(hero.rect)
@@ -325,6 +260,9 @@ async def main() :
                 if effect.stay_on_background : game.background.blit(tiles, effect.rect, effect.sprite)
                 if effect.remove : game.effect_list.remove(effect)
 
+            # monster spawn
+            if game.kappa_count <= MAX_KAPPAS : game.spawn_kappa()
+            if game.ogre_count <= MAX_OGRES : game.spawn_ogre()
 
         ## DRAWING BACKGROUND
             screen.blit(game.background, (0,0))
@@ -352,6 +290,12 @@ async def main() :
             # for s in game.shuriken_list :
             #     pygame.draw.rect(screen, 'white', s, 1)
             # pygame.draw.rect(screen, 'white', hero.rect, 1)
+            # for o in game.object_list :
+            #     if type(o) == struct.Bamboo : pygame.draw.rect(screen, 'white', o, 1)
+            #     if type(o) == struct.Shrine : pygame.draw.rect(screen, 'white', o, 1)
+            # for s in game.dead_zone_list :
+            #     pygame.draw.rect(screen, 'red', s['rect'], 1)
+
 
         ## DRAWING EFFECTS
             #screenshake

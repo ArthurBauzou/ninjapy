@@ -11,7 +11,7 @@ ogre_death_sound = pygame.mixer.Sound("assets/sounds2/ogre_death.ogg")
 ogre_slam = pygame.mixer.Sound("assets/sounds2/AnyConv.com__slam.ogg")
 ogre_slam.set_volume(0.2)
 kappa_hit_sound.set_volume(0.4)
-ogre_hit_sound.set_volume(0.3)
+ogre_hit_sound.set_volume(0.35)
 ogre_death_sound.set_volume(0.45)
 kappa_attack_sound.set_volume(0.4)
 

@@ -1,5 +1,11 @@
+# GENERAL
 GAME_WIDTH, GAME_HEIGHT = 480, 320
 GAME_SCALE = 2
 GAME_SPEED = 60
+
+# MONSTER SPAWN
+MAX_KAPPAS = 4
+MAX_OGRES = 4
+
 # score multiplier frames before resetting to 1
 MULTI_RESET = 300

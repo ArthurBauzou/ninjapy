@@ -9,9 +9,9 @@ import structures
 import player
 
 mixer.init()
-catch_sound = pygame.mixer.Sound("assets/sounds2/shuriken_grab_2.ogg")
+catch_sound = pygame.mixer.Sound("assets/sounds2/shuriken_grab_3.ogg")
 pickup_sound = pygame.mixer.Sound("assets/sounds2/AnyConv.com__step.ogg")
-catch_sound.set_volume(0.35)
+catch_sound.set_volume(0.4)
 pickup_sound.set_volume(0.3)
 
 ITEM_DROP = pygame.USEREVENT + 1
@@ -121,23 +121,15 @@ class Pickup:
             if hero.health < 4 : hero.health += 1
         self.removable = True
 
-    def get_out_dead_zone(self, dead_zone):
-        get_out = False
-        for dz in dead_zone :
-            if self.rect.colliderect(dz.dz_rect): get_out = True
-        if self.pos[0] < 8 \
-        or self.pos[0] > GAME_WIDTH - 8 \
-        or self.pos[1] < 8 \
-        or self.pos[1] > GAME_HEIGHT - 8 :
-            get_out = True
+    def get_out_dead_zone(self, list):
+        SPEED = 3
+        for dz in list:
+            if self.rect.colliderect(dz['rect']): 
+                self.pos = [self.pos[i] + SPEED*dz['dir'][i] for i in (0,1)]
+                self.rect.center = self.pos
+                self.sprite_pos = [x-8 for x in self.pos]
 
-        if get_out :
-            print('get out of dead zone')
-            if self.pos[0] < GAME_WIDTH/2 : self.pos = [x+3 for x in self.pos]
-            else : self.pos = [x-3 for x in self.pos]
-            self.rect.center = self.pos
-            self.sprite_pos = [x-8 for x in self.pos]
-
+## EFFECTS
 
 class OgreSlam:
     def __init__(self, pos):
@@ -155,13 +147,14 @@ class OgreSlam:
         if self.timer == 8 : self.sprite = tileset['slam2']
         if self.timer <= 0 : self.remove = True
 
+
 class Petal:
     def __init__(self, pos, go_left:bool = False):
         self.pos = [x for x in pos]
         self.rect = pygame.Rect(-100, -100, 8, 8)
         self.rect.center = self.pos
-        self.frame_list = ['petal1', 'petal2', 'petal3']
-        self.frame = random.choice(range(3))
+        self.frame_list = ['petal1', 'petal2', 'petal3', 'petal4']
+        self.frame = random.choice(range(4))
         self.sprite = tileset[self.frame_list[self.frame]]
         self.timer = 32
         self.remove = False
@@ -183,13 +176,55 @@ class Petal:
             self.speed[0] = 0
             self.speed[1] += 0.01
         #animate 
-        if self.timer %8==0 : self.animate()
+        if self.timer %8 ==0 : self.animate()
         #update pos
         self.pos = [self.pos[i] + self.speed[i] for i in (0,1)]
         self.rect.center = self.pos
         #end of effect
         if self.timer == 0: 
             self.stay_on_background = True
+            self.remove = True
+        
+    def animate(self):
+        if self.frame < len(self.frame_list) - 1 : self.frame += 1
+        else : self.frame = 0
+        self.sprite = tileset[self.frame_list[self.frame]]
+
+
+class Leaf:
+    def __init__(self, pos, go_left:bool = False):
+        self.pos = [x for x in pos]
+        self.rect = pygame.Rect(-100, -100, 8, 8)
+        self.rect.center = self.pos
+        self.frame_list = ['leaf1','leaf2','leaf3','leaf4']
+        self.frame = random.choice(range(4))
+        self.sprite = tileset[self.frame_list[self.frame]]
+        self.timer = 48
+        self.remove = False
+        self.on_bottom = False
+        self.stay_on_background = False
+        self.falling = False
+        self.speed = [
+            0.5 + random.choice(range(8))/10,
+            -1.5 - random.choice(range(8))/10
+        ]
+        if go_left : self.speed[0] = -self.speed[0]
+    
+    def update(self):
+        self.timer -= 1
+        #rise and fall
+        if self.speed[1] > 0 : self.falling = True
+        if not self.falling : self.speed[1] += 0.1
+        else : 
+            self.speed[0] = 0
+            self.speed[1] += 0.01
+        #animate 
+        if self.timer %8 ==0 : self.animate()
+        #update pos
+        self.pos = [self.pos[i] + self.speed[i] for i in (0,1)]
+        self.rect.center = self.pos
+        #end of effect
+        if self.timer == 0: 
             self.remove = True
         
     def animate(self):
