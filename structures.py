@@ -1,5 +1,4 @@
 import pygame, random
-from typing import List
 
 import objects
 
@@ -16,7 +15,6 @@ class Bamboo:
         self.OFFSET_Y = 24
         self.sprite_pos = [ self.rect.left - self.OFFSET_X, self.rect.top - self.OFFSET_Y ]
         self.solid = True
-        # self.bristle_timer = 0
 
     def get_dead_zone(self):
         rect = pygame.Rect(0, 0, 58, 50)

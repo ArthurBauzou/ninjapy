@@ -26,8 +26,11 @@ class Game:
                 style = random.choice(['grass1','grass2'])
                 self.background.blit(tiles, (32*x,32*y), tileset[style])
         # generating decor
-        bamboo_positions = [(64,64),(84,84),(416,264),(396,244)]
-        self.spawn_bamboos(bamboo_positions)
+        level1 = [(64,64),(84,84),(416,264),(396,244)]
+        level2 = [(80,80),(400,80),(80,256),(400,256)]
+        level3 = [(80,80),(240,64),(400,80),(240,264)]
+        self.spawn_bamboos(random.choice([level1, level2, level3]))
+        # self.spawn_bamboos([(80,80),(240,64),(400,80),(240,264)])
         self.bamboos = [obj for obj in self.object_list if type(obj) == struct.Bamboo]
         self.spawn_plants(28)
         self.spawn_shrine()
@@ -81,8 +84,6 @@ class Game:
             self.kappa_spawn_timer = 750 - (self.score*4) + random.choice(range(360))
             self.kappa_spawn_bamboo = random.choice(self.bamboos)
 
-        # print('kappa spawn timer :' + str(self.kappa_spawn_timer))
-
     def spawn_ogre(self):
         bristletime = 72
         hurryup = 5
@@ -94,6 +95,3 @@ class Game:
             self.object_list.append(ennemies.Ogre(self.ogre_spawn_bamboo.rect.center))
             self.ogre_spawn_timer = 1000 - (self.score*3) + random.choice(range(360))
             self.ogre_spawn_bamboo = random.choice(self.bamboos)
-
-
-        # print('ogre spawn timer :' + str(self.ogre_spawn_timer))

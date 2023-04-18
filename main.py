@@ -25,8 +25,9 @@ def get_z(obj):
 def isNear(a,b,sensibility):
     return a-b >= -sensibility and a-b <= sensibility
 
-def get_solid_objects(list) -> list:
-    solid_objects = [obj.rect for obj in list if obj.solid]
+def get_solid_objects(list, minus_bamboos = False) -> list:
+    if minus_bamboos : solid_objects = [obj.rect for obj in list if obj.solid and type(obj)!=struct.Bamboo]
+    else : solid_objects = [obj.rect for obj in list if obj.solid]
     return solid_objects
 
 
@@ -79,7 +80,6 @@ async def main() :
     score_back_rect = pygame.Rect(0,0,96,32)
     score_back_rect.topright = (480,0)
     multi_timer_rect = pygame.Rect(390,20,32,4)
-
     # health
     health_rect = pygame.Rect(0,0,80,16)
     flower_rects = [ pygame.Rect(16 + x*16, 0, 16, 16) for x in range(4) ]
@@ -114,7 +114,6 @@ async def main() :
                     exit()
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_UP: main_menu.go_up()
-                        
                     if event.key == pygame.K_DOWN: main_menu.go_down()
                     if event.key in [pygame.K_RETURN,pygame.K_x]  :
                         if main_menu.state == 'play':
@@ -157,15 +156,17 @@ async def main() :
                     exit()
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_r:
-                        # del game, hero
+                        #reset game
                         hero = player.Player([240,180])
                         game = level.Game(hero, tiles)
                         is_in_game_over = False
                     if event.key == pygame.K_m:
+                        #return to menu
                         main_menu = menu.Menu(main_menu.music_on)
                         main_menu.play_music(menu_music)
                         is_in_game_over = False
                         is_in_menu = True
+       
             screen.blit(game_over_bg, (0,64))
             screen.blit(game_over_splash, (116,48))
 
@@ -194,7 +195,6 @@ async def main() :
                         if last_arrow == event.key \
                         and game_frames - hero.input_dash_timer <= hero.DASH_DOUBLE_TAP_WINDOW:
                             hero.dash(event.key)
-                            
                         last_arrow = event.key
                         hero.input_dash_timer = game_frames
 
@@ -212,15 +212,19 @@ async def main() :
             # objects
             game.kappa_count = 0
             game.ogre_count = 0
+            monster_collision_list = get_solid_objects(game.object_list, True)
+            ogre_targets = [obj for obj in game.object_list if type(obj) in [player.Player, ennemies.Kappa]]
+
             for o in game.object_list :
                 if type(o) == ennemies.Ogre:
                     ogre = o
                     if ogre.charge_rect.colliderect(hero.rect) and ogre.state == 'normal': ogre.charge()
                     if ogre.state == 'charging' and ogre.rect.colliderect(hero.rect) \
                     or ogre.charge_timer == 1:
-                        ogre.slam(hero)
+                        ogre.slam(ogre_targets)
                         game.effect_list.append(objects.OgreSlam(ogre.rect.midbottom))
                     if ogre.state not in ['hurting', 'slamming'] : ogre.move(hero)
+                    ogre.collide(monster_collision_list)
                     ogre.update()
                     if ogre.state == 'removed' : game.object_list.remove(o)
                     game.ogre_count += 1
@@ -232,6 +236,7 @@ async def main() :
                         hero.damage(kappa.speed)
                         kappa.chill()
                         kappa.max_speed -= 0.05
+                    kappa.collide(monster_collision_list)
                     kappa.update()
                     kappa.warp()
                     if kappa.state == 'removed' : game.object_list.remove(o)
@@ -264,22 +269,26 @@ async def main() :
             if game.kappa_count <= MAX_KAPPAS : game.spawn_kappa()
             if game.ogre_count <= MAX_OGRES : game.spawn_ogre()
 
-        ## DRAWING BACKGROUND
-            screen.blit(game.background, (0,0))
+            #screenshake
+            if screenshake_timer > 0:
+                if screenshake_timer % screenshake_frequency == 0 : screen_position[0] += screenshake_intensity
+                else : screen_position[0] -= screenshake_intensity
+                screenshake_timer -= 1
+            else : screen_position = [0,0]
 
-        # effects on bottom
+        ## DRAW GAME
+            #background
+            screen.blit(game.background, (0,0))
+            #effects on bottom
             for effect in game.effect_list:
                 if effect.on_bottom : screen.blit(tiles, effect.rect, effect.sprite)
-
-        ## DRAWING ENTITIES
+            #objects
             game.object_list.sort(key=get_z)
             for obj in game.object_list:
                 screen.blit(tiles, obj.sprite_pos, obj.sprite)
-
             for shuriken in game.shuriken_list:
                 screen.blit(tiles, shuriken.sprite_pos, shuriken.sprite)
-
-            # effects on bottom
+            #effects on top
             for effect in game.effect_list:
                 if not effect.on_bottom : screen.blit(tiles, effect.rect, effect.sprite)
 
@@ -296,16 +305,7 @@ async def main() :
             # for s in game.dead_zone_list :
             #     pygame.draw.rect(screen, 'red', s['rect'], 1)
 
-
-        ## DRAWING EFFECTS
-            #screenshake
-            if screenshake_timer > 0:
-                if screenshake_timer % screenshake_frequency == 0 : screen_position[0] += screenshake_intensity
-                else : screen_position[0] -= screenshake_intensity
-                screenshake_timer -= 1
-            else : screen_position = [0,0]
-
-        ## DRAWING INTERFACE
+        ## DRAW INTERFACE
             #score
             screen.blit(tiles, score_back_rect, tileset['score_back'])
             score_message = score_font.render(str(game.score), False, 'orangered3')
@@ -324,7 +324,6 @@ async def main() :
                 if game.multi_reset_timer > 0 :
                     multi_timer_rect.width = game.multi_reset_timer * 32/MULTI_RESET
                 pygame.draw.rect(screen, 'orangered3', multi_timer_rect)
-                
             #health
             screen.blit(tiles, health_rect, tileset['branch'])
             for n in range(hero.health):
@@ -337,7 +336,7 @@ async def main() :
             for n in range(hero.ammo):
                 screen.blit(tiles, ammo_rects[n], tileset['shuriken1'])
 
-    #apply scale, update, control framerate
+    ## FINALISE DRAW : apply scale, update, control framerate
         win.blit(pygame.transform.scale(screen, win.get_rect().size), screen_position)
         pygame.display.update()
         clock.tick(GAME_SPEED)

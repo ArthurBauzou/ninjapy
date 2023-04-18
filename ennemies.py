@@ -1,5 +1,8 @@
 import pygame, random
 from pygame import mixer
+
+import player as player
+
 from sprite_map import tileset
 from conf import GAME_HEIGHT,GAME_WIDTH
 
@@ -24,6 +27,9 @@ def get_target_direction(self_rect:pygame.Rect,target_rect:pygame.Rect):
         if direction[i] == 0 : continue
         else : direction[i] = direction[i] / abs(direction[i])
     return direction
+
+def isNear(a,b,sensibility):
+    return a-b >= -sensibility and a-b <= sensibility
 
 SCORE = pygame.USEREVENT + 2
 
@@ -58,23 +64,14 @@ class Kappa:
         self.sprite_pos = ( self.rect.left - self.OFFSET_X, self.rect.top - self.OFFSET_Y )
 
         self.timer -= 1
-
         if self.state == 'dying':
             if self.timer %10==0 : self.pos[0] -= 4
             elif self.timer %5==0: self.pos[0] += 4
             # destroy
             if self.timer == 0 : self.state = 'removed'
             if self.timer %2==0: self.sprite[3] -= 1
-
-        elif self.state == 'attacking':
-            if self.timer == 0 : self.chill()
-
-        elif self.state == 'chill':
-            if self.timer == 0 : self.waddle()
-
-        if self.state == 'normal':
-            if self.timer == 0 : 
-                self.waddle()
+        elif self.state == 'attacking' and self.timer == 0 : self.chill()
+        elif self.state in ['normal', 'chill'] and self.timer == 0 : self.waddle()
 
 
     def waddle(self):
@@ -90,15 +87,16 @@ class Kappa:
         self.timer = 60
         self.sprite = tileset['kappa']
 
-    def kill(self):
+    def kill(self, from_hero = True):
         self.timer = 48
         self.speed = [0,0]
         self.state = 'dying'
         self.sprite = tileset['kappa_hit']
         pygame.mixer.Sound.play(kappa_hit_sound)
         self.sprite = [x for x in self.sprite]
-        pygame.event.post(pygame.event.Event(SCORE,{'value':0, 'style': 'multi'}))
-        pygame.event.post(pygame.event.Event(SCORE,{'value':2, 'style': 'score'}))
+        if from_hero :
+            pygame.event.post(pygame.event.Event(SCORE,{'value':0, 'style': 'multi'}))
+            pygame.event.post(pygame.event.Event(SCORE,{'value':2, 'style': 'score'}))
 
     def warp(self):
         if self.rect.center[0] > GAME_WIDTH: self.pos[0] = 0
@@ -115,6 +113,14 @@ class Kappa:
         self.speed = [x*2 for x in dir]
         self.sprite = tileset['kappa_flex']
         pygame.mixer.Sound.play(kappa_attack_sound)
+
+    def collide(self, list):
+        for rect in list:
+            if self.rect.colliderect(rect):
+                if isNear(self.rect.left, rect.right, 3) and self.speed[0] < 0: self.speed[0] = 0
+                elif isNear(self.rect.right, rect.left, 3) and self.speed[0] > 0: self.speed[0] = 0 
+                elif isNear(self.rect.bottom, rect.top, 3) and self.speed[1] > 0: self.speed[1] = 0 
+                elif isNear(self.rect.top, rect.bottom, 3) and self.speed[1] < 0: self.speed[1] = 0 
 
 
 ## OGRE ##
@@ -189,7 +195,20 @@ class Ogre:
         self.max_speed = 1.2 + random.choice(range(6))/10
         self.charge_timer = 90
 
-    def slam(self, target):
+    # def slam(self, target):
+    #     self.charge_timer = 0
+    #     self.speed = [0,0]
+    #     self.state = 'slamming'
+    #     self.sprite = tileset['ogre_slam']
+    #     self.slam_timer = 24
+    #     self.slam_rect.center = self.rect.center
+    #     pygame.mixer.Sound.play(ogre_slam)
+    #     if self.slam_rect.colliderect(target.rect) :
+    #         dir = get_target_direction(self.rect,target.rect)
+    #         target.damage(dir)
+
+    
+    def slam(self, target_list):
         self.charge_timer = 0
         self.speed = [0,0]
         self.state = 'slamming'
@@ -197,9 +216,13 @@ class Ogre:
         self.slam_timer = 24
         self.slam_rect.center = self.rect.center
         pygame.mixer.Sound.play(ogre_slam)
-        if self.slam_rect.colliderect(target.rect) :
-            dir = get_target_direction(self.rect,target.rect)
-            target.damage(dir)
+        for target in target_list :
+            if self.slam_rect.colliderect(target.rect) :
+                if type(target) == player.Player : 
+                    dir = get_target_direction(self.rect,target.rect)
+                    target.damage(dir)
+                if type(target) == Kappa :
+                    target.kill(False)
 
     def damage(self, dir):
         self.sprite = tileset['ogre_hit']
@@ -219,3 +242,11 @@ class Ogre:
             self.sprite = [x for x in self.sprite]
             self.hurt_timer = 64
             self.destroy = True
+
+    def collide(self, list):
+        for rect in list:
+            if self.rect.colliderect(rect):
+                if isNear(self.rect.left, rect.right, 3) and self.speed[0] < 0: self.speed[0] = 0
+                elif isNear(self.rect.right, rect.left, 3) and self.speed[0] > 0: self.speed[0] = 0 
+                elif isNear(self.rect.bottom, rect.top, 3) and self.speed[1] > 0: self.speed[1] = 0 
+                elif isNear(self.rect.top, rect.bottom, 3) and self.speed[1] < 0: self.speed[1] = 0 
