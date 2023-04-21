@@ -7,7 +7,7 @@ from sprite_map import menu_ogre
 menu_states = ['play', 'music', 'controls']
 
 ## sounds
-menu_move = pygame.mixer.Sound("assets/sounds2/AnyConv.com__shoot.ogg")
+menu_move = pygame.mixer.Sound("assets/sounds2/AnyConv.com__step.ogg")
 menu_blocked = pygame.mixer.Sound("assets/sounds2/AnyConv.com__bounce.ogg")
 menu_move.set_volume(0.2)
 menu_blocked.set_volume(0.2)

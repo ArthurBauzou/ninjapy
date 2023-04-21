@@ -31,6 +31,7 @@ def get_target_direction(self_rect:pygame.Rect,target_rect:pygame.Rect):
 def isNear(a,b,sensibility):
     return a-b >= -sensibility and a-b <= sensibility
 
+ITEM_DROP = pygame.USEREVENT + 1
 SCORE = pygame.USEREVENT + 2
 
 ## KAPPA
@@ -98,6 +99,10 @@ class Kappa:
         if from_hero :
             pygame.event.post(pygame.event.Event(SCORE,{'value':0, 'style': 'multi'}))
             pygame.event.post(pygame.event.Event(SCORE,{'value':2, 'style': 'score'}))
+            if random.choice(range(5)) == 0 : pygame.event.post(pygame.event.Event(ITEM_DROP,{'pos': self.pos, 'style': 'rice'}))
+        else :
+            pygame.event.post(pygame.event.Event(SCORE,{'value':2, 'style': 'multi'}))
+            pygame.event.post(pygame.event.Event(ITEM_DROP,{'pos': self.pos, 'style': 'rice'}))
 
     def warp(self):
         if self.rect.center[0] > GAME_WIDTH: self.pos[0] = 0
@@ -219,7 +224,7 @@ class Ogre:
         pygame.mixer.Sound.play(ogre_slam)
         for target in target_list :
             if self.slam_rect.colliderect(target.rect) :
-                if type(target) == player.Player : 
+                if type(target) in [player.Player, Ogre] : 
                     dir = get_target_direction(self.rect,target.rect)
                     target.damage(dir)
                 if type(target) == Kappa :

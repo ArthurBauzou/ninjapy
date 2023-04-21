@@ -95,7 +95,7 @@ async def main() :
     ## Generating menu
     is_in_menu = True
     is_in_game_over = False
-    main_menu = menu.Menu(True)
+    main_menu = menu.Menu(False)
 
     ## Launch Music
     main_menu.play_music(menu_music)
@@ -267,8 +267,8 @@ async def main() :
                 if effect.remove : game.effect_list.remove(effect)
 
             # monster spawn
-            if game.kappa_count <= MAX_KAPPAS-1 : game.spawn_kappa()
-            if game.ogre_count <= MAX_OGRES-1 : game.spawn_ogre()
+            if game.kappa_count < MAX_KAPPAS : game.spawn_kappa()
+            if game.ogre_count < MAX_OGRES : game.spawn_ogre()
 
             #screenshake
             if screenshake_timer > 0:

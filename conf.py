@@ -8,4 +8,4 @@ MAX_KAPPAS = 4
 MAX_OGRES = 3
 
 # score multiplier frames before resetting to 1
-MULTI_RESET = 300
+MULTI_RESET = 360
