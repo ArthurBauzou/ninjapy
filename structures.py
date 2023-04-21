@@ -25,10 +25,10 @@ class Bamboo:
         dead_zone = { 'rect': rect, 'dir': dir }
         return dead_zone
 
-    def bristle(self, timer, list):
+    def bristle(self, timer, effect_list:list):
         if timer %24 == 0 :
-            list.append(objects.Leaf(self.rect.topleft, True))
-            list.append(objects.Leaf(self.rect.topright))
+            effect_list.append(objects.Leaf(self.rect.topleft, True))
+            effect_list.append(objects.Leaf(self.rect.topright))
 
         if timer %9 == 0 : self.sprite_pos[0] += 1
         elif timer %6 == 0 : pass

@@ -63,24 +63,25 @@ class Shuriken:
         if type(target) == player.Player:
 
             if target.state == 'dashing' :
+                if self.state == 'active' :
+                    pygame.event.post(pygame.event.Event(SCORE,{'value': 1, 'style': 'multi'}))
+                    pygame.mixer.Sound.play(catch_sound)
                 self.state = 'removed'
-                pygame.event.post(pygame.event.Event(SCORE,{'value': 1, 'style': 'multi'}))
-                pygame.mixer.Sound.play(catch_sound)
                 if target.ammo < 5 : target.ammo += 1
 
-            if target.state == 'normal' :
+            if target.state == 'normal' and self.state == 'active':
                 target.damage([x/3 for x in self.speed])
                 self.bounce(target)
 
-        if type(target) == ennemies.Ogre and target.state != 'hurting':
+        if type(target) == ennemies.Ogre and target.state != 'hurting' and self.state == 'active':
             target.damage(self.speed)
             self.bounce(target)
 
-        if type(target) == ennemies.Kappa and target.state != 'dying':
+        if type(target) == ennemies.Kappa and target.state != 'dying' and self.state == 'active':
             target.kill()
             self.bounce(target)
 
-        if type(target) == structures.Shrine:
+        if type(target) == structures.Shrine and self.state == 'active':
             self.bounce(target)
 
     def bounce(self, target):

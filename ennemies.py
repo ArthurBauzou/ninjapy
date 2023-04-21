@@ -18,15 +18,7 @@ ogre_hit_sound.set_volume(0.35)
 ogre_death_sound.set_volume(0.45)
 kappa_attack_sound.set_volume(0.4)
 
-# cette fonction renvoie un vecteur type (a,b) ou a et b ne peuvent avoir que les valeurs -1, 0 ou 1.
-def get_target_direction(self_rect:pygame.Rect,target_rect:pygame.Rect):
-    direction = [target_rect.center[i] - self_rect.center[i] for i in range(2)]
-    if abs(direction[0]) < 1/3 * abs(direction[1]) : direction[0] = 0
-    if abs(direction[1]) < 1/3 * abs(direction[0]) : direction[1] = 0
-    for i in (0,1) :
-        if direction[i] == 0 : continue
-        else : direction[i] = direction[i] / abs(direction[i])
-    return direction
+
 
 def isNear(a,b,sensibility):
     return a-b >= -sensibility and a-b <= sensibility
@@ -66,14 +58,11 @@ class Kappa:
 
         self.timer -= 1
         if self.state == 'dying':
-            if self.timer %10==0 : self.pos[0] -= 4
-            elif self.timer %5==0: self.pos[0] += 4
-            # destroy
-            if self.timer == 0 : self.state = 'removed'
+            self.wiggle(0,4)
             if self.timer %2==0: self.sprite[3] -= 1
+            if self.timer == 0 : self.state = 'removed'
         elif self.state == 'attacking' and self.timer == 0 : self.chill()
         elif self.state in ['normal', 'chill'] and self.timer == 0 : self.waddle()
-
 
     def waddle(self):
         self.state = 'normal'
@@ -82,6 +71,10 @@ class Kappa:
             if not abs(self.speed[i]) > self.max_speed : self.speed[i] += -0.3 + random.choice(range(7))/10
             if random.choice(range(self.stress)) == 0 : self.speed = [x/2 for x in self.speed]
 
+    def wiggle(self, direction, intensity):
+        if self.timer %10==0 : self.pos[direction] -= intensity
+        elif self.timer %5==0: self.pos[direction] += intensity
+
     def chill(self):
         self.speed = [x/4 for x in self.speed]
         self.state = 'chill'
@@ -89,12 +82,12 @@ class Kappa:
         self.sprite = tileset['kappa']
 
     def kill(self, from_hero = True):
-        self.solid = False
-        self.timer = 48
-        self.speed = [0,0]
         self.state = 'dying'
+        self.timer = 48
         self.sprite = tileset['kappa_hit']
         pygame.mixer.Sound.play(kappa_hit_sound)
+        self.solid = False
+        self.speed = [0,0]
         self.sprite = [x for x in self.sprite]
         if from_hero :
             pygame.event.post(pygame.event.Event(SCORE,{'value':0, 'style': 'multi'}))
@@ -110,23 +103,32 @@ class Kappa:
         if self.rect.center[1] < 0: self.pos[1] = GAME_HEIGHT
         if self.rect.center[1] > GAME_HEIGHT: self.pos[1] = 0
 
+    # cette fonction renvoie un vecteur type (a,b) ou a et b ne peuvent avoir que les valeurs -1, 0 ou 1.
+    def get_target_direction(self, self_rect:pygame.Rect, target_rect:pygame.Rect):
+        direction = [target_rect.center[i] - self_rect.center[i] for i in range(2)]
+        if abs(direction[0]) < 1/3 * abs(direction[1]) : direction[0] = 0
+        if abs(direction[1]) < 1/3 * abs(direction[0]) : direction[1] = 0
+        for i in (0,1) :
+            if direction[i] == 0 : continue
+            else : direction[i] = direction[i] / abs(direction[i])
+        return direction
+
     def attack(self, target):
-        self.stress += 1
-        self.max_speed += 0.05
-        self.timer = 30
-        dir = get_target_direction(self.rect,target.rect)
         self.state = 'attacking'
-        self.speed = [x*2 for x in dir]
+        self.timer = 30
         self.sprite = tileset['kappa_flex']
         pygame.mixer.Sound.play(kappa_attack_sound)
+        dir = self.get_target_direction(self.rect,target.rect)
+        self.speed = [x*2 for x in dir]
+        self.stress += 1
+        self.max_speed += 0.05
 
-    def collide(self, list):
-        for rect in list:
-            if self.rect.colliderect(rect):
-                if isNear(self.rect.left, rect.right, 3) and self.speed[0] < 0: self.speed[0] = 0
-                elif isNear(self.rect.right, rect.left, 3) and self.speed[0] > 0: self.speed[0] = 0 
-                elif isNear(self.rect.bottom, rect.top, 3) and self.speed[1] > 0: self.speed[1] = 0 
-                elif isNear(self.rect.top, rect.bottom, 3) and self.speed[1] < 0: self.speed[1] = 0 
+    def collide(self, rect):
+        if self.rect.colliderect(rect):
+            if isNear(self.rect.left, rect.right, 3) and self.speed[0] < 0: self.speed[0] = 0
+            elif isNear(self.rect.right, rect.left, 3) and self.speed[0] > 0: self.speed[0] = 0 
+            elif isNear(self.rect.bottom, rect.top, 3) and self.speed[1] > 0: self.speed[1] = 0 
+            elif isNear(self.rect.top, rect.bottom, 3) and self.speed[1] < 0: self.speed[1] = 0 
 
 
 ## OGRE ##
@@ -143,18 +145,16 @@ class Ogre:
         self.sprite_pos = ( self.rect.left - self.OFFSET_X, self.rect.top - self.OFFSET_Y )
         self.solid = True
         self.life = 3
-        self.MAX_SPEED = 0.4 + random.choice(range(6))/10
+        self.MAX_SPEED = 0.3 + random.choice(range(6))/10
+        self.max_speed = self.MAX_SPEED + (4 - self.life)/10
 
         # behaviour
         self.charge_rect = pygame.Rect(-100, -100, 108, 108)
         self.slam_rect = pygame.Rect(-100, -100, 32, 32)
         self.state = 'normal'
-        self.hurt_timer = 0
-        self.charge_timer = 0
-        self.slam_timer = 0
-        self.max_speed = self.MAX_SPEED
+        self.timer = 0
         self.destroy = False
-        self.wiggle = 2
+        # self.wiggle = 2
 
     def update(self):
         for i in range(2): self.pos[i] += self.speed[i]
@@ -162,98 +162,94 @@ class Ogre:
         self.charge_rect.center = (self.pos[0], self.pos[1])
         self.sprite_pos = ( self.rect.left - self.OFFSET_X, self.rect.top - self.OFFSET_Y )
 
-        # reset state
-        if self.hurt_timer == 0 \
-        and self.charge_timer == 0 \
-        and self.slam_timer == 0 : 
-            self.state = 'normal'
-            self.sprite = tileset['ogre']
-            self.max_speed = self.MAX_SPEED
-        # damage
-        elif self.hurt_timer > 0 :
-            self.hurt_timer -= 1
-            if self.hurt_timer %10==0 : self.pos[0] -= self.wiggle
-            elif self.hurt_timer %5==0: self.pos[0] += self.wiggle
-            # destroy
-            if self.destroy and self.hurt_timer == 1 : self.state = 'removed'
-            if self.destroy and self.hurt_timer %2==0:
-                self.sprite[3] -= 1
-        # slam
-        elif self.slam_timer > 0 :
-            self.slam_timer -= 1
-            if self.slam_timer %10==0 : self.pos[1] -=2
-            elif self.slam_timer %5==0: self.pos[1] +=2
-        # charge
-        elif self.charge_timer > 0 :
-            self.charge_timer -= 1
+        if self.timer > 0 : self.timer -= 1
+        #animations
+        if self.state == 'hurting' :
+            if self.destroy :
+                self.wiggle(0,4)
+                if self.timer %2==0: self.sprite[3] -= 1
+                if self.timer == 0 : self.state = 'removed'
+            else : 
+                self.wiggle(0,2)
+                if self.timer == 0 : self.normal()
+        elif self.state == 'slamming' : self.wiggle(1,2)
 
-    def move(self, target):
+        if self.state not in ['charging', 'hurting', 'removed'] and self.timer == 0 :
+            self.normal()
+
+    def normal(self):
+        self.state = 'normal'
+        self.sprite = tileset['ogre']
+        self.max_speed = self.MAX_SPEED + (4 - self.life)/10
+
+    def get_target_direction(self, self_rect:pygame.Rect, target_rect:pygame.Rect):
+        direction = [target_rect.center[i] - self_rect.center[i] for i in range(2)]
+        if abs(direction[0]) < 1/3 * abs(direction[1]) : direction[0] = 0
+        if abs(direction[1]) < 1/3 * abs(direction[0]) : direction[1] = 0
+        for i in (0,1) :
+            if direction[i] == 0 : continue
+            else : direction[i] = direction[i] / abs(direction[i])
+        return direction
+
+    def follow_target(self, target):
         ACCEL = 0.2
-        dir = get_target_direction(self.rect,target.rect)
+        dir = self.get_target_direction(self.rect,target.rect)
         for i in range(2): self.speed[i] += ACCEL*dir[i]
         for i,x in enumerate(self.speed):
             if x >= self.max_speed: self.speed[i] = self.max_speed
             if x <= -self.max_speed: self.speed[i] = -self.max_speed
 
+    # d must be 0 or 1, which wiggles on x axis or on y axis
+    def wiggle(self, d, intensity):
+        if self.timer %10==0 : self.pos[d] -= intensity
+        elif self.timer %5==0: self.pos[d] += intensity
+
     def charge(self):
         self.state = 'charging'
         self.sprite = tileset['ogre_charge']
         self.max_speed = 1.2 + random.choice(range(6))/10
-        self.charge_timer = 90
-
-    # def slam(self, target):
-    #     self.charge_timer = 0
-    #     self.speed = [0,0]
-    #     self.state = 'slamming'
-    #     self.sprite = tileset['ogre_slam']
-    #     self.slam_timer = 24
-    #     self.slam_rect.center = self.rect.center
-    #     pygame.mixer.Sound.play(ogre_slam)
-    #     if self.slam_rect.colliderect(target.rect) :
-    #         dir = get_target_direction(self.rect,target.rect)
-    #         target.damage(dir)
-
+        self.timer = 90
     
-    def slam(self, target_list):
-        self.charge_timer = 0
-        self.speed = [0,0]
+    def slam(self, targets):
         self.state = 'slamming'
         self.sprite = tileset['ogre_slam']
-        self.slam_timer = 24
+        self.speed = [0,0]
+        self.timer = 24
         self.slam_rect.center = self.rect.center
         pygame.mixer.Sound.play(ogre_slam)
-        for target in target_list :
-            if self.slam_rect.colliderect(target.rect) :
-                if type(target) in [player.Player, Ogre] : 
-                    dir = get_target_direction(self.rect,target.rect)
+
+        for target in targets :
+            if self.slam_rect.colliderect(target.rect) and self.state == 'slamming' and target.rect != self.rect:
+                dir = self.get_target_direction(self.rect,target.rect)
+                if type(target) == player.Player : 
                     target.damage(dir)
+                elif type(target) == Ogre :
+                    target.damage([x*5 for x in dir], False)
                 if type(target) == Kappa :
                     target.kill(False)
 
-    def damage(self, dir):
-        self.sprite = tileset['ogre_hit']
+    def damage(self, dir, from_hero = True):
         self.state = 'hurting'
-        pygame.event.post(pygame.event.Event(SCORE,{'value': 4-self.life, 'style': 'score'}))
-        self.charge_timer = 0
-        self.life -= 1
+        self.sprite = tileset['ogre_hit']
+        if from_hero :
+            self.life -= 1
+            pygame.event.post(pygame.event.Event(SCORE,{'value': 4-self.life, 'style': 'score'}))
         if self.life > 0 : 
+            self.timer = 42
             pygame.mixer.Sound.play(ogre_hit_sound)
             self.speed = [x/5 for x in dir]
-            self.hurt_timer = 42
         else :
+            self.timer = 64
             pygame.event.post(pygame.event.Event(SCORE,{'value': 1, 'style': 'multi'}))
             pygame.mixer.Sound.play(ogre_death_sound)
-            self.wiggle = 4
             self.speed = [0,0]
             self.sprite = [x for x in self.sprite]
-            self.hurt_timer = 64
             self.solid = False
             self.destroy = True
 
-    def collide(self, list):
-        for rect in list:
-            if self.rect.colliderect(rect):
-                if isNear(self.rect.left, rect.right, 3) and self.speed[0] < 0: self.speed[0] = 0
-                elif isNear(self.rect.right, rect.left, 3) and self.speed[0] > 0: self.speed[0] = 0 
-                elif isNear(self.rect.bottom, rect.top, 3) and self.speed[1] > 0: self.speed[1] = 0 
-                elif isNear(self.rect.top, rect.bottom, 3) and self.speed[1] < 0: self.speed[1] = 0 
+    def collide(self, rect):
+        if self.rect.colliderect(rect):
+            if isNear(self.rect.left, rect.right, 3) and self.speed[0] < 0: self.speed[0] = 0
+            elif isNear(self.rect.right, rect.left, 3) and self.speed[0] > 0: self.speed[0] = 0 
+            elif isNear(self.rect.bottom, rect.top, 3) and self.speed[1] > 0: self.speed[1] = 0 
+            elif isNear(self.rect.top, rect.bottom, 3) and self.speed[1] < 0: self.speed[1] = 0 

@@ -32,6 +32,7 @@ class Game:
         self.spawn_bamboos(random.choice([level1, level2, level3]))
         self.bamboos = [obj for obj in self.object_list if type(obj) == struct.Bamboo]
         self.spawn_plants(28)
+        self.shrine:struct.Shrine
         self.spawn_shrine()
         # additional dead zones : border
         self.dead_zone_list.append({ 'rect': pygame.Rect(-32,-32,40,GAME_HEIGHT+64), 'dir': (1,0) })
@@ -68,6 +69,7 @@ class Game:
 
     def spawn_shrine(self):
         shrine = struct.Shrine((240,160))
+        self.shrine = shrine
         self.object_list.append(shrine)
         self.dead_zone_list.append(shrine.get_dead_zone())
 

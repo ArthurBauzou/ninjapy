@@ -201,8 +201,8 @@ async def main() :
         ## ENTITIES BEHAVIOUR
 
             sol_obj = get_solid_objects(game.object_list)
-            monster_collision_list = get_solid_objects(game.object_list, True)
-            ogre_targets = [obj for obj in game.object_list if type(obj) in [player.Player, ennemies.Kappa]]
+            # monster_collision_list = get_solid_objects(game.object_list, True)
+            # ogre_targets = [obj for obj in game.object_list if type(obj) in [player.Player, ennemies.Kappa]]
 
             # player
             if hero.health == 0 : is_in_game_over = True
@@ -218,30 +218,29 @@ async def main() :
 
             for o in game.object_list :
                 if type(o) == ennemies.Ogre:
+                    game.ogre_count += 1
                     ogre = o
+                    if ogre.state in ['normal', 'charging'] : ogre.follow_target(hero)
                     if ogre.charge_rect.colliderect(hero.rect) and ogre.state == 'normal': ogre.charge()
-                    if ogre.state == 'charging' and ogre.rect.colliderect(hero.rect) \
-                    or ogre.charge_timer == 1:
-                        ogre.slam(ogre_targets)
+                    if ogre.state == 'charging' and ( ogre.rect.colliderect(hero.rect) or ogre.timer == 0 ): 
+                        ogre.slam(game.object_list)
                         game.effect_list.append(objects.OgreSlam(ogre.rect.midbottom))
-                    if ogre.state not in ['hurting', 'slamming'] : ogre.move(hero)
-                    ogre.collide(monster_collision_list)
+                    ogre.collide(game.shrine.rect)
                     ogre.update()
                     if ogre.state == 'removed' : game.object_list.remove(o)
-                    game.ogre_count += 1
 
                 if type(o) == ennemies.Kappa :
+                    game.kappa_count += 1
                     kappa = o
                     if kappa.attack_rect.colliderect(hero.rect) and kappa.state == 'normal': kappa.attack(hero)
                     if kappa.rect.colliderect(hero.rect) and kappa.state == 'attacking':
                         hero.damage(kappa.speed)
                         kappa.chill()
                         kappa.max_speed -= 0.05
-                    kappa.collide(monster_collision_list)
+                    kappa.collide(game.shrine.rect)
                     kappa.update()
                     kappa.warp()
                     if kappa.state == 'removed' : game.object_list.remove(o)
-                    game.kappa_count += 1
 
                 if type(o) == objects.Pickup :
                     pickup = o
@@ -255,7 +254,7 @@ async def main() :
                 shuriken.warp()
                 if shuriken.state != 'pickup' : shuriken.animate()
                 for obj in game.object_list:
-                    if shuriken.rect.colliderect(obj.rect) and shuriken.state == 'active' :
+                    if shuriken.rect.colliderect(obj.rect) :
                         shuriken.collide(obj)
                 shuriken.update()
                 if shuriken.state == 'removed' : game.shuriken_list.remove(shuriken)
