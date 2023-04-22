@@ -48,7 +48,7 @@ async def main() :
     game_frames = 0
     screenshake_timer = 0
     screenshake_frequency = 2
-    screenshake_intensity = 4
+    screenshake_intensity = 0
 
     ## MENU
     menu_background = pygame.Surface((GAME_WIDTH, GAME_HEIGHT))
@@ -192,9 +192,12 @@ async def main() :
                     pygame.quit()
                     exit()
                 if event.type == PLAYER_HURT:
-                    screenshake_timer = 8
-                    game.effect_list.append(objects.Petal(hero.rect.center))
-                    game.effect_list.append(objects.Petal(hero.rect.center, True))
+
+                        screenshake_timer = event.timer
+                        screenshake_intensity = event.intensity
+                        game.effect_list.append(objects.Petal(hero.rect.center))
+                        game.effect_list.append(objects.Petal(hero.rect.center, True))
+
                 if event.type == SCORE:
                     if event.style == 'multi':
                         game.multi += event.value

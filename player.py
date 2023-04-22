@@ -12,6 +12,8 @@ dash_sound = pygame.mixer.Sound("assets/sounds2/dash2.ogg")
 shoot_sound = pygame.mixer.Sound("assets/sounds2/shuriken.ogg")
 hurt_sound = pygame.mixer.Sound("assets/sounds2/AnyConv.com__hurt.ogg")
 bounce_sound = pygame.mixer.Sound("assets/sounds2/AnyConv.com__bounce.ogg")
+player_death_sound = pygame.mixer.Sound("assets/sounds2/player_death.ogg")
+player_death_sound.set_volume(0.3)
 dash_sound.set_volume(0.3)
 shoot_sound.set_volume(0.3)
 hurt_sound.set_volume(0.8)
@@ -167,8 +169,13 @@ class Player:
         self.hurt_timer = 24
         if self.state != 'hurting' :
             self.health -= 1
-            pygame.mixer.Sound.play(hurt_sound)
-            pygame.event.post(pygame.event.Event(PLAYER_HURT))
+            if self.health > 0 :
+                pygame.event.post(pygame.event.Event(PLAYER_HURT,{'timer':8, 'intensity':4 }))
+                pygame.mixer.Sound.play(hurt_sound)
+            else :
+                pygame.event.post(pygame.event.Event(PLAYER_HURT,{'timer':32, 'intensity':6 }))
+                pygame.mixer.Sound.play(player_death_sound)
+            
         self.state = 'hurting'
         self.speed = [x for x in direction]
         self.sprite = tileset['ninja_hurt']

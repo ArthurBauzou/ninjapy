@@ -17,7 +17,7 @@ class Menu:
         self.state_index = 0
         self.state = 'play'
         self.active = False
-        self.timer = 45
+        self.timer = 10
         self.transition = 'hidden'
         self.FADE_TIME = 45
         
