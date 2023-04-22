@@ -16,6 +16,10 @@ class Menu:
     def __init__(self, music_on):
         self.state_index = 0
         self.state = 'play'
+        self.active = False
+        self.timer = 45
+        self.transition = 'hidden'
+        self.FADE_TIME = 45
         
         # title
         self.title_back = pygame.Surface((480,80))
@@ -31,7 +35,7 @@ class Menu:
         # ogre
         self.ogre_sprite = menu_ogre['ogre']
         self.ogre_pos = [0,320]
-        self.ogre_speed = [1+random.choice(range(5))/10,2]
+        self.ogre_speed = [1+random.choice(range(5))/10, 2]
         self.ogre_timer = 0
         self.blink_timer = 0
         self.ogre_direction = [1,-1]
@@ -71,6 +75,15 @@ class Menu:
             spr['pos'] = (self.title_pos[0]+spr['x_offset'],self.title_pos[1]+8)
         if self.state != 'controls' : self.show_controls == False
 
+        if self.timer > 0 : self.timer -= 1
+        if self.timer == 0 : 
+            if not self.active : self.active = True
+            if self.transition == 'fading' : self.transition = 'done'
+
+    def start_transition(self):
+        if self.transition == 'hidden' :
+            self.timer = self.FADE_TIME
+            self.transition = 'fading'
 
     def go_up(self):
         if self.state == 'play':

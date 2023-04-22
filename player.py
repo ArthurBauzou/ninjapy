@@ -120,7 +120,6 @@ class Player:
             self.hurt_timer -= 1
             if self.hurt_timer %6==0 : self.pos[1] -=2
             elif self.hurt_timer %3==0: self.pos[1] +=2
-            if self.hurt_timer == 1: self.health -= 1
         # dash
         if self.dash_timer > 0: self.dash_timer -= 1
         if self.dash_cooldown_timer > 0: self.dash_cooldown_timer -= 1
@@ -165,10 +164,11 @@ class Player:
                 elif isNear(self.rect.top, obj.bottom, 3) and self.speed[1] < 0: self.speed[1] = 0 
 
     def damage(self, direction):
-        HURT_COOLDOWN = 24
+        self.hurt_timer = 24
+        if self.state != 'hurting' :
+            self.health -= 1
+            pygame.mixer.Sound.play(hurt_sound)
+            pygame.event.post(pygame.event.Event(PLAYER_HURT))
         self.state = 'hurting'
         self.speed = [x for x in direction]
         self.sprite = tileset['ninja_hurt']
-        self.hurt_timer = HURT_COOLDOWN
-        pygame.event.post(pygame.event.Event(PLAYER_HURT))
-        pygame.mixer.Sound.play(hurt_sound)

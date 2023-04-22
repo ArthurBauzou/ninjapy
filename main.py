@@ -53,6 +53,9 @@ async def main() :
     ## MENU
     menu_background = pygame.Surface((GAME_WIDTH, GAME_HEIGHT))
     menu_background.fill('#323c39')
+    menu_transition = pygame.Surface((GAME_WIDTH,GAME_HEIGHT))
+    menu_transition.fill('black')
+    ## GAME OVER MENU
     game_over_bg = pygame.Surface((GAME_WIDTH, GAME_HEIGHT-128))
     game_over_bg.fill('burlywood4')
     game_over_bg.set_alpha(1)
@@ -112,16 +115,14 @@ async def main() :
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     exit()
-                if event.type == pygame.KEYDOWN:
+                if event.type == pygame.KEYDOWN and main_menu.active:
                     if event.key == pygame.K_UP: main_menu.go_up()
                     if event.key == pygame.K_DOWN: main_menu.go_down()
                     if event.key in [pygame.K_RETURN,pygame.K_x]  :
                         if main_menu.state == 'play':
-                            main_menu.play_music(game_music)
+                            main_menu.start_transition()
+                            main_menu.active = False
                             pygame.mixer.Sound.play(menu_confirm)
-                            hero = player.Player([240,180])
-                            game = level.Game(hero, tiles)
-                            is_in_menu = False
                         if main_menu.state == 'music':
                             main_menu.switch_music_on()
                             main_menu.play_music(menu_music)
@@ -134,19 +135,32 @@ async def main() :
             main_menu.ogre_blink()
             main_menu.update()
 
-            # draw menu
+            if main_menu.transition == 'done' and main_menu.state == 'play' :
+                main_menu.play_music(game_music)
+                hero = player.Player([240,180])
+                game = level.Game(hero, tiles)
+                is_in_menu = False
+
+            # DRAW MENU
+            #back
             screen.blit(menu_background, (0,0))
             screen.blit(menu_ogre, main_menu.ogre_pos, main_menu.ogre_sprite)
             screen.blit(menu_title_art, (0,0))
+            #title
             screen.blit(main_menu.title_back, main_menu.title_pos)
             for spr in main_menu.title_sprites :
                 screen.blit(menu_texts, spr['pos'], spr['sprite'])
+            #menu
             for spr in main_menu.menu_sprites :
                 screen.blit(menu_texts, spr['rect'], spr['sprite'])
             screen.blit(menu_texts, main_menu.arrow_pos, main_menu.arrow_sprite)
             screen.blit(menu_texts, main_menu.on_off_pos, main_menu.on_off_sprite)
             if main_menu.show_controls : 
                 screen.blit(menu_contols, main_menu.controls_pos)
+            
+            if main_menu.transition == 'fading' :
+                    menu_transition.set_alpha(255-(main_menu.timer*255/main_menu.FADE_TIME))
+                    screen.blit(menu_transition, (0,0))
 
     ## GAME OVER
         elif is_in_game_over :
@@ -201,8 +215,6 @@ async def main() :
         ## ENTITIES BEHAVIOUR
 
             sol_obj = get_solid_objects(game.object_list)
-            # monster_collision_list = get_solid_objects(game.object_list, True)
-            # ogre_targets = [obj for obj in game.object_list if type(obj) in [player.Player, ennemies.Kappa]]
 
             # player
             if hero.health == 0 : is_in_game_over = True
@@ -269,13 +281,6 @@ async def main() :
             if game.kappa_count < MAX_KAPPAS : game.spawn_kappa()
             if game.ogre_count < MAX_OGRES : game.spawn_ogre()
 
-            #screenshake
-            if screenshake_timer > 0:
-                if screenshake_timer % screenshake_frequency == 0 : screen_position[0] += screenshake_intensity
-                else : screen_position[0] -= screenshake_intensity
-                screenshake_timer -= 1
-            else : screen_position = [0,0]
-
         ## DRAW GAME
             #background
             screen.blit(game.background, (0,0))
@@ -335,6 +340,13 @@ async def main() :
             screen.blit(tiles, belt_rect, tileset['belt'])
             for n in range(hero.ammo):
                 screen.blit(tiles, ammo_rects[n], tileset['shuriken1'])
+
+        #screenshake
+        if screenshake_timer > 0:
+            if screenshake_timer % screenshake_frequency == 0 : screen_position[0] += screenshake_intensity
+            else : screen_position[0] -= screenshake_intensity
+            screenshake_timer -= 1
+        else : screen_position = [0,0]
 
     ## FINALISE DRAW : apply scale, update, control framerate
         win.blit(pygame.transform.scale(screen, win.get_rect().size), screen_position)

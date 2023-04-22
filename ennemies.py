@@ -147,14 +147,12 @@ class Ogre:
         self.life = 3
         self.MAX_SPEED = 0.3 + random.choice(range(6))/10
         self.max_speed = self.MAX_SPEED + (4 - self.life)/10
-
-        # behaviour
+    # behaviour
         self.charge_rect = pygame.Rect(-100, -100, 108, 108)
         self.slam_rect = pygame.Rect(-100, -100, 32, 32)
         self.state = 'normal'
         self.timer = 0
         self.destroy = False
-        # self.wiggle = 2
 
     def update(self):
         for i in range(2): self.pos[i] += self.speed[i]
