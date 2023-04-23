@@ -164,7 +164,7 @@ class GameOverMenu:
             'Wanabee Neenja',
             'Sakura Fan',
             'Naruto Runner',
-            'Dark Dasuke',
+            'Dark Sasuke',
             'Sexy Kakashi',
             'Giga Chad Madara',
             'Grand Master Max'
