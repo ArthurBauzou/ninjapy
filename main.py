@@ -173,6 +173,8 @@ async def main() :
                         go_menu.switch_choice()
                     if event.key == pygame.K_x and not go_menu.score_is_loaded :
                         go_menu.score = go_menu.MAX_SCORE-2
+                        go_menu.rank_index = int(go_menu.score/80)
+                        if go_menu.rank_index > 6 : go_menu.rank_index = 6
                     if event.key == pygame.K_x and go_menu.score_is_loaded :
                         if go_menu.choice == 'retry' :
                             # retry
