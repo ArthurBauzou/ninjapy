@@ -72,10 +72,12 @@ async def main() :
     tiles = pygame.image.load('assets/tiles.png').convert_alpha()
     game_over_splash = pygame.image.load('assets/game_over.png').convert_alpha()
     game_over_shuriken = pygame.image.load('assets/game_over_shuriken.png').convert_alpha()
+    fond_score = pygame.image.load('assets/fond_score.png').convert_alpha()
 
     ## INTERFACE
     # score
     score_font = pygame.font.Font('assets/kloudt.regular.otf', 24)
+    big_score_font = pygame.font.Font('assets/kloudt.regular.otf', 48)
     multi_font = pygame.font.Font('assets/kloudt.regular.otf', 16)
     score_back_rect = pygame.Rect(0,0,96,32)
     score_back_rect.topright = (480,0)
@@ -95,8 +97,8 @@ async def main() :
     ## Generating menu
     is_in_menu = True
     is_in_game_over = False
-    main_menu = menu.Menu(False)
-    go_menu = menu.GameOverMenu()
+    main_menu = menu.Menu(True)
+    go_menu = menu.GameOverMenu(0)
 
     ## Launch Music
     main_menu.play_music(menu_music)
@@ -166,18 +168,23 @@ async def main() :
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     exit()
-                if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_r:
-                        #reset game
-                        hero = player.Player([240,180])
-                        game = level.Game(hero, tiles)
-                        is_in_game_over = False
-                    if event.key == pygame.K_m:
-                        #return to menu
-                        main_menu = menu.Menu(main_menu.music_on)
-                        main_menu.play_music(menu_music)
-                        is_in_game_over = False
-                        is_in_menu = True
+                if event.type == pygame.KEYDOWN :
+                    if (event.key == pygame.K_RIGHT or event.key == pygame.K_LEFT) and go_menu.score_is_loaded:
+                        go_menu.switch_choice()
+                    if event.key == pygame.K_x and not go_menu.score_is_loaded :
+                        go_menu.score = go_menu.MAX_SCORE-2
+                    if event.key == pygame.K_x and go_menu.score_is_loaded :
+                        if go_menu.choice == 'retry' :
+                            # retry
+                            hero = player.Player([240,180])
+                            game = level.Game(hero, tiles)
+                            is_in_game_over = False
+                        else : 
+                            # return to menu
+                            main_menu = menu.Menu(main_menu.music_on)
+                            main_menu.play_music(menu_music)
+                            is_in_game_over = False
+                            is_in_menu = True
 
             #UPDATE
             go_menu.update()
@@ -188,6 +195,24 @@ async def main() :
             if go_menu.active :
                 screen.blit(game_over_splash, go_menu.head_pos['text'])
                 screen.blit(game_over_shuriken, go_menu.head_pos['shuriken'])
+                screen.blit(fond_score, go_menu.score_pos)
+                #score
+                score_message = big_score_font.render(str(go_menu.score), False, 'firebrick')
+                score_message_rect = score_message.get_rect()
+                score_message_rect.center = (240,go_menu.score_pos[1]+50)
+                #rank
+                rank_message = score_font.render(go_menu.rank_list[go_menu.rank_index], False, 'firebrick')
+                rank_message_rect = rank_message.get_rect()
+                rank_message_rect.center = (240,go_menu.score_pos[1]+96)
+                screen.blit(score_message, score_message_rect)
+                screen.blit(rank_message, rank_message_rect)
+            #menu
+            if go_menu.score_is_loaded :
+                pygame.draw.rect(screen, 'firebrick', go_menu.menu_rect, 0, 3)
+                screen.blit(menu_texts, (148,go_menu.MENU_Y), go_menu.retry_sprite)
+                screen.blit(menu_texts, (288,go_menu.MENU_Y), go_menu.menu_sprite)
+                if go_menu.choice == 'retry' : screen.blit(menu_texts, (116, go_menu.MENU_Y), go_menu.arrow_sprite)
+                else : screen.blit(menu_texts, (256, go_menu.MENU_Y), go_menu.arrow_sprite)
 
     ## MAIN GAME
         else:
@@ -226,7 +251,7 @@ async def main() :
 
             # player
             if hero.health == 0 : 
-                go_menu = menu.GameOverMenu(hero)
+                go_menu = menu.GameOverMenu(game.score, hero)
                 is_in_game_over = True
             if hero.state == 'normal': hero.control_movement()
             if hero.state == 'dashing': hero.bounce(sol_obj)

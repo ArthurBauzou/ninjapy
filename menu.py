@@ -137,29 +137,59 @@ class Menu:
 
 
 class GameOverMenu:
-    def __init__(self, hero:player.Player=False):
+    def __init__(self, gamescore, hero:player.Player=False):
         self.active = False
-        # self.state = 'empty'
+        self.score_is_loaded = False
         self.timer = 72
         #bg
         self.bg = pygame.Surface((GAME_WIDTH, GAME_HEIGHT))
         self.bg.fill('indianred')
         self.bg.set_alpha(1)
         #head
-        self.head_pos = {'text': (128,24), 'shuriken': (264,32)}
+        self.head_pos = {'text': (128,16), 'shuriken': (280,24)}
+        self.score_pos = (48,108)
+        #menu
+        self.choice = 'retry'
+        self.MENU_Y = 256
+        self.menu_rect = (90, 256, 312, 32)
+        self.retry_sprite = menu_texts['retry']
+        self.menu_sprite = menu_texts['menu']
+        self.arrow_sprite = menu_texts['arrow']
         #ninja
         if hero :
             self.hero = {'sprite': hero.sprite, 'pos': hero.sprite_pos}
         mixer.music.set_volume(0.2)
+        #score
+        self.rank_list = (
+            'Wanabee Neenja',
+            'Sakura Fan',
+            'Naruto Runner',
+            'Dark Dasuke',
+            'Sexy Kakashi',
+            'OP Madara',
+            'Grand Master Max'
+        )
+        self.rank_index = 0
+        self.score = 0
+        self.MAX_SCORE = gamescore
 
     def update(self):
         if self.timer > 0 : self.timer -= 1
 
+        if self.active and self.score < self.MAX_SCORE : self.score += 2
+        if self.score > self.MAX_SCORE : self.score = self.MAX_SCORE
+        if self.score %80==0 and self.score > 1  and self.rank_index <= 6 : self.rank_index += 1
+
+        if self.score == self.MAX_SCORE : self.score_is_loaded = True
+
         if self.timer == 0 : 
             if not self.active : 
-                # pygame.mixer.Sound.play(menu_move)
                 pygame.mixer.Sound.play(menu_blocked)
                 self.active = True
  
+    def switch_choice(self):
+        pygame.mixer.Sound.play(menu_move)
+        if self.choice == 'retry' : self.choice = 'menu'
+        else : self.choice = 'retry'
 
 
