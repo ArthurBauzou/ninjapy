@@ -1,8 +1,11 @@
 import pygame, random
 from pygame import mixer
 
+import player
+
 from sprite_map import menu_texts
 from sprite_map import menu_ogre
+from conf import GAME_HEIGHT, GAME_WIDTH
 
 menu_states = ['play', 'music', 'controls']
 
@@ -131,3 +134,32 @@ class Menu:
             pygame.mixer.music.load(song)
             mixer.music.set_volume(self.music_volume)
             mixer.music.play(-1)
+
+
+class GameOverMenu:
+    def __init__(self, hero:player.Player=False):
+        self.active = False
+        # self.state = 'empty'
+        self.timer = 72
+        #bg
+        self.bg = pygame.Surface((GAME_WIDTH, GAME_HEIGHT))
+        self.bg.fill('indianred')
+        self.bg.set_alpha(1)
+        #head
+        self.head_pos = {'text': (128,24), 'shuriken': (264,32)}
+        #ninja
+        if hero :
+            self.hero = {'sprite': hero.sprite, 'pos': hero.sprite_pos}
+        mixer.music.set_volume(0.2)
+
+    def update(self):
+        if self.timer > 0 : self.timer -= 1
+
+        if self.timer == 0 : 
+            if not self.active : 
+                # pygame.mixer.Sound.play(menu_move)
+                pygame.mixer.Sound.play(menu_blocked)
+                self.active = True
+ 
+
+

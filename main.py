@@ -55,10 +55,6 @@ async def main() :
     menu_background.fill('#323c39')
     menu_transition = pygame.Surface((GAME_WIDTH,GAME_HEIGHT))
     menu_transition.fill('black')
-    ## GAME OVER MENU
-    game_over_bg = pygame.Surface((GAME_WIDTH, GAME_HEIGHT-128))
-    game_over_bg.fill('burlywood4')
-    game_over_bg.set_alpha(1)
 
     ## SOUNDS
     menu_confirm = pygame.mixer.Sound("assets/sounds2/letsgo.ogg")
@@ -75,6 +71,7 @@ async def main() :
     menu_contols = pygame.image.load('assets/controls.png').convert_alpha()
     tiles = pygame.image.load('assets/tiles.png').convert_alpha()
     game_over_splash = pygame.image.load('assets/game_over.png').convert_alpha()
+    game_over_shuriken = pygame.image.load('assets/game_over_shuriken.png').convert_alpha()
 
     ## INTERFACE
     # score
@@ -99,6 +96,7 @@ async def main() :
     is_in_menu = True
     is_in_game_over = False
     main_menu = menu.Menu(False)
+    go_menu = menu.GameOverMenu()
 
     ## Launch Music
     main_menu.play_music(menu_music)
@@ -180,9 +178,16 @@ async def main() :
                         main_menu.play_music(menu_music)
                         is_in_game_over = False
                         is_in_menu = True
-       
-            screen.blit(game_over_bg, (0,64))
-            screen.blit(game_over_splash, (116,48))
+
+            #UPDATE
+            go_menu.update()
+
+            # DRAW
+            screen.blit(go_menu.bg, (0, 0))
+            screen.blit(tiles, go_menu.hero['pos'], go_menu.hero['sprite'])
+            if go_menu.active :
+                screen.blit(game_over_splash, go_menu.head_pos['text'])
+                screen.blit(game_over_shuriken, go_menu.head_pos['shuriken'])
 
     ## MAIN GAME
         else:
@@ -220,7 +225,9 @@ async def main() :
             sol_obj = get_solid_objects(game.object_list)
 
             # player
-            if hero.health == 0 : is_in_game_over = True
+            if hero.health == 0 : 
+                go_menu = menu.GameOverMenu(hero)
+                is_in_game_over = True
             if hero.state == 'normal': hero.control_movement()
             if hero.state == 'dashing': hero.bounce(sol_obj)
             else : hero.collide(sol_obj)
