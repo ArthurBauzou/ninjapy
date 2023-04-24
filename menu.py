@@ -166,7 +166,7 @@ class GameOverMenu:
             'Naruto Runner',
             'Dark Sasuke',
             'Sexy Kakashi',
-            'Giga Chad Madara',
+            'Papa Madara',
             'Grand Master Max'
         )
         self.rank_index = 0
@@ -176,9 +176,11 @@ class GameOverMenu:
     def update(self):
         if self.timer > 0 : self.timer -= 1
 
-        if self.active and self.score < self.MAX_SCORE : self.score += 2
-        if self.score > self.MAX_SCORE : self.score = self.MAX_SCORE
-        if self.score %80==0 and self.score > 1  and self.rank_index < 6 : self.rank_index += 1
+        if not self.score_is_loaded :
+            if self.active and self.score < self.MAX_SCORE : self.score += 2
+            self.rank_index = int(self.score/80)
+            if self.score > self.MAX_SCORE : self.score = self.MAX_SCORE
+            if self.rank_index > 6 : self.rank_index = 6
 
         if self.score == self.MAX_SCORE : self.score_is_loaded = True
 

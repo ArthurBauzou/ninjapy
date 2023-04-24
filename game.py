@@ -82,7 +82,7 @@ class Game:
             self.kappa_spawn_bamboo.bristle(self.kappa_spawn_timer, self.effect_list)
         if self.kappa_spawn_timer < 0 :
             self.object_list.append(ennemies.Kappa(self.kappa_spawn_bamboo.rect.center))
-            self.kappa_spawn_timer = 750 - (self.score*4) + random.choice(range(360))
+            self.kappa_spawn_timer = 750 - (self.score*1.5) + random.choice(range(360))
             self.kappa_spawn_bamboo = random.choice(self.bamboos)
 
     def spawn_ogre(self):
@@ -94,5 +94,5 @@ class Game:
             self.ogre_spawn_bamboo.bristle(self.ogre_spawn_timer, self.effect_list)
         if self.ogre_spawn_timer < 0 :
             self.object_list.append(ennemies.Ogre(self.ogre_spawn_bamboo.rect.center))
-            self.ogre_spawn_timer = 1000 - (self.score*3) + random.choice(range(360))
+            self.ogre_spawn_timer = 1000 - (self.score*1.5) + random.choice(range(360))
             self.ogre_spawn_bamboo = random.choice(self.bamboos)

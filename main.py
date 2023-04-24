@@ -188,10 +188,9 @@ async def main() :
                             is_in_game_over = False
                             is_in_menu = True
 
-            #UPDATE
             go_menu.update()
 
-            # DRAW
+            #draw
             screen.blit(go_menu.bg, (0, 0))
             screen.blit(tiles, go_menu.hero['pos'], go_menu.hero['sprite'])
             if go_menu.active :

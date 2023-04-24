@@ -19,7 +19,6 @@ ogre_death_sound.set_volume(0.45)
 kappa_attack_sound.set_volume(0.4)
 
 
-
 def isNear(a,b,sensibility):
     return a-b >= -sensibility and a-b <= sensibility
 
@@ -103,7 +102,6 @@ class Kappa:
         if self.rect.center[1] < 0: self.pos[1] = GAME_HEIGHT
         if self.rect.center[1] > GAME_HEIGHT: self.pos[1] = 0
 
-    # cette fonction renvoie un vecteur type (a,b) ou a et b ne peuvent avoir que les valeurs -1, 0 ou 1.
     def get_target_direction(self, self_rect:pygame.Rect, target_rect:pygame.Rect):
         direction = [target_rect.center[i] - self_rect.center[i] for i in range(2)]
         if abs(direction[0]) < 1/3 * abs(direction[1]) : direction[0] = 0
@@ -197,10 +195,9 @@ class Ogre:
             if x >= self.max_speed: self.speed[i] = self.max_speed
             if x <= -self.max_speed: self.speed[i] = -self.max_speed
 
-    # d must be 0 or 1, which wiggles on x axis or on y axis
-    def wiggle(self, d, intensity):
-        if self.timer %10==0 : self.pos[d] -= intensity
-        elif self.timer %5==0: self.pos[d] += intensity
+    def wiggle(self, axis, intensity):
+        if self.timer %10==0 : self.pos[axis] -= intensity
+        elif self.timer %5==0: self.pos[axis] += intensity
 
     def charge(self):
         self.state = 'charging'
